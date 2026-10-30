@@ -352,6 +352,10 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
 .items { list-style: none; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; background: var(--soft); }
 .items li { display: flex; flex-direction: column; gap: 1px; font-size: 14px; }
 .items li span:first-child { font-weight: 500; }
+
+.pw { position: relative; }
+.pw .input { padding-right: 72px; }
+.pw-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); height: 36px; padding: 0 12px; border: 0; border-radius: 10px; background: var(--soft); color: var(--ink); font-size: 14px; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
@@ -364,7 +368,7 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
     <p class="sub" id="authLead">เข้าสู่ระบบเพื่อดูและบันทึกรายการของคุณ แต่ละอีเมลเห็นเฉพาะข้อมูลของตัวเอง</p>
     <form id="authForm" class="authform" novalidate>
       <div class="field"><label for="aEmail">อีเมล</label><input class="input" id="aEmail" type="email" autocomplete="email" inputmode="email"></div>
-      <div class="field"><label for="aPass">รหัสผ่าน</label><input class="input" id="aPass" type="password" autocomplete="current-password" minlength="6"></div>
+      <div class="field"><label for="aPass">รหัสผ่าน</label><div class="pw"><input class="input" id="aPass" type="password" autocomplete="current-password" minlength="6"><button type="button" class="pw-eye" id="pwToggle" aria-label="แสดงรหัสผ่าน" aria-pressed="false">แสดง</button></div></div>
       <div class="actions">
         <button class="btn-main" type="submit" id="btnIn">เข้าสู่ระบบ</button>
         <button class="btn-alt" type="button" id="btnUp">สมัครใช้งาน</button>
@@ -697,7 +701,8 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
     if (/not confirmed/i.test(m)) return 'ยังไม่ได้ยืนยันอีเมล ตรวจกล่องจดหมายแล้วกดลิงก์ยืนยัน';
     if (/rate limit|too many/i.test(m)) return 'ลองบ่อยเกินไป รอสักครู่แล้วลองใหม่';
     if (/valid email|invalid format/i.test(m)) return 'รูปแบบอีเมลไม่ถูกต้อง';
-    return 'ทำรายการไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง';
+    if (/fetch|network|timeout|load failed/i.test(m) || (err && (err.name === 'AuthRetryableFetchError' || err.status === 0 || err.status >= 500))) return 'เชื่อมต่อระบบหลังบ้าน (Supabase) ไม่ได้ ถ้าเน็ตปกติ โปรเจกต์ Supabase อาจถูกพักไว้ ให้เข้า supabase.com แล้วกด Resume project';
+    return 'ทำรายการไม่สำเร็จ' + (m ? ' (' + m + ')' : '') + ' ลองอีกครั้ง';
   }
   function creds() {
     var email = $('aEmail').value.trim(), pass = $('aPass').value;
@@ -711,7 +716,7 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
     $('auth').hidden = !!u;
     if (u) {
       $('whoEmail').textContent = u.email || '';
-      $('aPass').value = '';
+      $('aPass').value = ''; $('aPass').type = 'password'; $('pwToggle').textContent = 'แสดง'; $('pwToggle').setAttribute('aria-pressed', 'false');
       authMsg('');
       loadData();
     } else {
@@ -724,8 +729,16 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
       ev.preventDefault();
       var c = creds(); if (!c) return;
       authMsg('กำลังเข้าสู่ระบบ…');
-      var r = await sb.auth.signInWithPassword(c);
+      var r;
+      try { r = await sb.auth.signInWithPassword(c); } catch (e) { r = { error: e }; }
       if (r.error) authMsg(thErr(r.error), 'err');
+    });
+    $('pwToggle').addEventListener('click', function () {
+      var show = $('aPass').type === 'password';
+      $('aPass').type = show ? 'text' : 'password';
+      this.textContent = show ? 'ซ่อน' : 'แสดง';
+      this.setAttribute('aria-pressed', String(show));
+      this.setAttribute('aria-label', show ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน');
     });
     $('btnUp').addEventListener('click', async function () {
       var c = creds(); if (!c) return;
