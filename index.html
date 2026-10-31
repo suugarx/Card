@@ -356,6 +356,9 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
 .pw { position: relative; }
 .pw .input { padding-right: 72px; }
 .pw-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); height: 36px; padding: 0 12px; border: 0; border-radius: 10px; background: var(--soft); color: var(--ink); font-size: 14px; }
+.pos-link { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: 18px; background: var(--accent-soft); color: var(--ink); text-decoration: none; }
+.pos-link b { font: 600 17px var(--font-display); color: var(--accent); }
+.pos-link span { font-size: 13px; color: var(--muted); }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
@@ -419,6 +422,8 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
         <button type="button" class="act-big sell" data-act2="sell-any"><b>ขายของ</b><span>บันทึกยอดขาย</span></button>
         <button type="button" class="act-big buy" data-act2="buy"><b>ซื้อของเข้า</b><span>เปิด lot ใหม่</span></button>
       </div>
+
+      <a class="pos-link" href="pos.html"><b>เปิด POS รับออเดอร์</b><span>เลือกสินค้าใส่ตะกร้า ตัดสต็อก และติดตามว่าต้องส่งอะไร</span></a>
 
       <div class="shortcuts">
         <button type="button" class="shortcut" data-go="lot"><span>ของในร้าน (คิดราคาทุน)</span><b id="stockVal">฿0</b><small id="stockLeft"></small></button>
@@ -840,7 +845,7 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
         var it = itemFor(o, e), q = qtyOf(e, o);
         o.rev += e.amount; o.sold += q;
         if (e.pending) o.pend += e.amount; else o.recv += e.amount;
-        if (it) { it.sold += q; it.rev += e.amount; if (q > 0 && (e.t || 0) >= it.lastT) { it.lastT = e.t || 0; it.lastPer = e.amount / q; } }
+        if (it) { it.sold += q; it.rev += e.amount; if (q > 0 && (e.t || 0) >= it.lastT) { it.lastT = e.t || 0; it.lastPer = e.unitPrice || e.amount / q; } }
       });
     });
     S.lots.forEach(function (l) {

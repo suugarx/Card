@@ -1,6 +1,6 @@
 // เก็บหน้าแอปไว้ในเครื่อง เพื่อให้เปิดเร็วและเปิดจากหน้าจอโฮมได้ ข้อมูลบัญชียังโหลดจาก Supabase ทุกครั้ง
-const CACHE = 'card-shop-v1';
-const SHELL = ['./', 'index.html', 'config.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
+const CACHE = 'card-shop-v2';
+const SHELL = ['./', 'index.html', 'pos.html', 'config.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
