@@ -659,7 +659,7 @@ body { font-size: 15.5px; }
   }
   function products() {
     var m = stock(), out = [];
-    S.lots.forEach(function (l) { if (!l.closed) m[l.id].list.forEach(function (x) { out.push(x); }); });
+    S.lots.forEach(function (l) { if (!l.closed && !l.gacha) m[l.id].list.forEach(function (x) { out.push(x); }); });
     m._direct.list.forEach(function (x) { out.push(x); });
     return out;
   }

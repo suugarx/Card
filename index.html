@@ -384,6 +384,18 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
 .stockbox > div:first-child { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
 .stockbox b { font: 700 22px var(--font-display); color: var(--accent); }
 
+.gstat { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.gstat > div { padding: 12px; border-radius: 14px; background: var(--accent-soft); display: flex; flex-direction: column; gap: 2px; }
+.gstat b { font: 700 20px var(--font-display); color: var(--accent); font-variant-numeric: tabular-nums; }
+.gprize { display: flex; flex-direction: column; gap: 6px; }
+.gprize li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; }
+.gprize .track { grid-column: 1 / -1; height: 6px; }
+.grow { display: grid; grid-template-columns: minmax(0, 1fr) 96px auto; gap: 8px; align-items: center; }
+.hitrow { display: grid; grid-template-columns: minmax(0, 1fr) 44px 56px 44px; gap: 6px; align-items: center; }
+.hitrow button { height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-size: 20px; color: var(--ink); }
+.hitrow input { text-align: center; padding: 0 4px; }
+.hitrow span b { display: block; font-weight: 600; }
+
 /* ===== Theme: deep navy, one tone =====
    Navy carries every action and active state; green/red appear only for profit and loss. */
 :root {
@@ -651,7 +663,7 @@ body { font-size: 15.5px; }
         <p class="hint">จัดสต็อกได้ที่สินค้าแต่ละตัว: กดที่สินค้า แล้วเลือก "รับของเข้า" หรือ "แก้จำนวนให้ตรง" ของที่ซื้อเป็น lot จะรวมเข้ามาเองถ้าชื่อเหมือนกัน</p>
       </div>
       <div class="panel" id="lotView" hidden>
-      <button type="button" class="btn-main" data-act2="buy">＋ ซื้อของเข้า (lot ใหม่)</button>
+      <div class="actions2"><button type="button" class="btn-main" data-act2="buy">＋ ซื้อของเข้า</button><button type="button" class="btn-quiet" data-act2="gacha" style="height:52px">＋ เปิดตู้สุ่ม</button></div>
       <p class="sub">1 lot = 1 รอบที่ซื้อของเข้าร้าน ใน lot ใส่ของได้หลายอย่าง (กล่อง ซอง การ์ดใบ อุปกรณ์) ระบบคิดทุนต่อชิ้นและกำไรของรอบนั้นให้</p>
       <div class="chips" id="lotFilter" role="group" aria-label="กรอง lot">
         <button type="button" class="chip" data-f="open" aria-pressed="true">กำลังขาย</button>
@@ -996,7 +1008,7 @@ body { font-size: 15.5px; }
   function lotStats() {
     var m = {};
     S.lots.forEach(function (l) {
-      var o = { stock: 0, other: 0, cost: 0, rev: 0, recv: 0, pend: 0, n: 0, sold: 0, packs: 0, items: {}, list: [] };
+      var o = { stock: 0, other: 0, cost: 0, rev: 0, recv: 0, pend: 0, n: 0, sold: 0, packs: 0, items: {}, list: [], hits: {} };
       lotItems(l).forEach(function (it) {
         var pr = (it.prod && prodById(it.prod)) || prodByName(it.name);
         var x = { id: it.id, prod: pr ? pr.id : '', pkey: pr ? pr.id : 'n:' + normName(it.name || l.name), price: pr && pr.price > 0 ? pr.price : 0, name: pr ? pr.name : (it.name || l.name), unit: it.unit || (pr && pr.unit) || 'ชิ้น', qty: Math.max(0, parseInt(it.qty, 10) || 0), cost: parseFloat(it.cost) > 0 ? parseFloat(it.cost) : 0, sold: 0, rev: 0, lastPer: 0, lastT: -1 };
@@ -1012,6 +1024,7 @@ body { font-size: 15.5px; }
         if (e.type === 'expense') { if (STOCK[e.cat]) o.stock += e.amount; else o.other += e.amount; return; }
         var it = itemFor(o, e), q = qtyOf(e, o);
         o.rev += e.amount; o.sold += q;
+        if (e.hits) Object.keys(e.hits).forEach(function (k) { o.hits[k] = (o.hits[k] || 0) + (parseInt(e.hits[k], 10) || 0); });
         if (e.pending) o.pend += e.amount; else o.recv += e.amount;
         if (it) { it.sold += q; it.rev += e.amount; if (q > 0 && (e.t || 0) >= it.lastT) { it.lastT = e.t || 0; it.lastPer = e.unitPrice || e.amount / q; } }
       });
@@ -1176,6 +1189,7 @@ body { font-size: 15.5px; }
       if (dd.lastT > g.lastT) { g.lastT = dd.lastT; g.lastPer = dd.lastPer; }
     });
     S.lots.forEach(function (l) {
+      if (l.gacha) return;
       ls[l.id].list.forEach(function (x) {
         var g = get(x.pkey, x.name, x.unit, x.prod, x.price);
         g.qty += x.qty; g.costSum += x.costPer * x.qty; g.costN += x.qty;
@@ -1190,6 +1204,7 @@ body { font-size: 15.5px; }
         if (e.type !== 'income') return;
         if (!e.lot && e.prod && m[e.prod]) { var gd = m[e.prod], qd = e.qty > 0 ? e.qty : 1; gd.sold += qd; gd.rev += e.amount; gd.cogs += qd * gd.dCost; return; }
         if (!e.lot || !ls[e.lot]) return;
+        var lg = lotById(e.lot); if (lg && lg.gacha) return;
         var x = itemFor(ls[e.lot], e); if (!x) return;
         var g = m[x.pkey], q = qtyOf(e, ls[e.lot]);
         g.sold += q; g.rev += e.amount; g.cogs += q * x.costPer;
@@ -1540,6 +1555,7 @@ body { font-size: 15.5px; }
       return;
     }
     host.innerHTML = list.map(function (l) {
+      if (l.gacha) return gachaCard(l, ls[l.id]);
       if (ls[l.id].packs > 0) return packLotCard(l, ls[l.id]);
       var o = ls[l.id], open = !!S.lotOpen[l.id], pc = cls(o.profit);
       var pct = o.cost > 0 ? Math.min(100, Math.round(o.back * 100)) : 0;
@@ -1556,6 +1572,89 @@ body { font-size: 15.5px; }
       if (open) html += lotDetail(l, o);
       return html + '</div></article>';
     }).join('');
+  }
+  /* Gacha box (ตู้สุ่ม): a lot of N draws at a fixed price, with prizes that come out as draws are sold. */
+  function gachaInfo(l, o) {
+    var g = l.gacha, t = o.items.t || o.list[0], prizes = (g.prizes || []).map(function (p) { return { id: p.id, name: p.name, qty: parseInt(p.qty, 10) || 0, out: o.hits[p.id] || 0 }; });
+    var hitTotal = 0, hitOut = 0;
+    prizes.forEach(function (p) { hitTotal += p.qty; hitOut += p.out; });
+    var left = t ? t.left : 0, hitLeft = Math.max(0, hitTotal - hitOut);
+    return { g: g, t: t, prizes: prizes, hitTotal: hitTotal, hitOut: hitOut, hitLeft: hitLeft, left: left, rate: left ? hitLeft / left : 0 };
+  }
+  function gachaCard(l, o) {
+    var gi = gachaInfo(l, o), g = gi.g, open = !!S.lotOpen[l.id], pc = cls(o.profit);
+    var pct = Math.min(100, Math.round(o.sold / g.tickets * 100));
+    var full = g.tickets * g.price - o.cost, be = g.price > 0 ? Math.ceil(o.cost / g.price) : 0;
+    var status = o.gap <= 0
+      ? '<p class="lot-status ok">✓ คืนทุนแล้ว ได้เงินเกินทุนมา ' + baht(-o.gap) + '</p>'
+      : '<p class="lot-status">ขายอีก ' + Math.max(0, be - o.sold) + ' ครั้งถึงจะคืนทุน (คืนทุนที่ครั้งที่ ' + be + ')</p>';
+    var html = '<article class="slab' + (l.closed ? ' closed' : '') + '"><header class="slab-label"><span class="slab-name">🎰 ' + esc(l.name) + '</span><span class="slab-date">' + baht(g.price) + '/ครั้ง</span></header>' +
+      '<div class="slab-body"><div class="slab-profit"><span class="sub">' + (l.closed ? 'กำไรของตู้นี้' : 'กำไรจากที่ขายแล้ว') + '</span><b class="' + (pc === 'zero0' ? '' : pc) + '">' + (pc === 'zero0' ? baht(0) : signed(Math.round(o.profit))) + '</b></div>' +
+      '<div class="track" role="img" aria-label="ขายแล้ว ' + o.sold + ' จาก ' + g.tickets + ' ครั้ง"><div class="fill in" style="width:' + pct + '%"></div></div>' +
+      '<p class="sub">ขายแล้ว <b>' + o.sold + '/' + g.tickets + '</b> ครั้ง · เหลือ ' + gi.left + ' ครั้ง' + (o.pend > 0 ? ' · รอเงินเข้า ' + baht(o.pend) : '') + '</p>' + status +
+      '<div class="gstat"><div><span class="sub">รางวัลเหลือในตู้</span><b>' + gi.hitLeft + '/' + gi.hitTotal + '</b></div>' +
+      '<div><span class="sub">โอกาสได้รางวัลตอนนี้</span><b>' + (gi.left ? (Math.round(gi.rate * 1000) / 10) + '%' : '–') + '</b>' + (gi.left && gi.hitLeft ? '<span class="sub">ประมาณ 1 ใน ' + (Math.round(gi.left / gi.hitLeft * 10) / 10) + ' ครั้ง</span>' : '') + '</div></div>' +
+      (gi.prizes.length > 1 ? '<ul class="gprize">' + gi.prizes.map(function (p) {
+        return '<li><span>' + esc(p.name) + '</span><span class="sub">ออกแล้ว ' + p.out + '/' + p.qty + '</span><div class="track"><div class="fill" style="width:' + (p.qty ? Math.min(100, Math.round(p.out / p.qty * 100)) : 0) + '%"></div></div></li>';
+      }).join('') + '</ul>' : '') +
+      '<dl class="slab-stats"><div><dt>ทุนทั้งตู้</dt><dd>' + baht(o.cost) + '</dd></div><div><dt>ขายได้</dt><dd>' + baht(o.rev) + '</dd></div>' +
+      '<div><dt>ถ้าขายหมด</dt><dd class="' + (cls(full) === 'zero0' ? '' : cls(full)) + '">' + signed(Math.round(full)) + '</dd></div></dl>' +
+      '<div class="slab-actions">' + (l.closed ? '' : '<button type="button" class="btn-main sm" data-act2="sell" data-id="' + esc(l.id) + '">ขายสุ่ม ＋</button>') +
+      '<button type="button" class="btn-quiet" data-act="lot-toggle" data-id="' + esc(l.id) + '" aria-expanded="' + open + '">' + (open ? 'ซ่อน' : 'ดูรายการ ' + o.n) + '</button>' +
+      '<button type="button" class="btn-quiet" data-act="' + (l.closed ? 'lot-reopen' : 'lot-close') + '" data-id="' + esc(l.id) + '">' + (l.closed ? 'เปิดตู้อีกครั้ง' : 'ปิดตู้') + '</button></div>';
+    if (open) html += lotDetail(l, o);
+    return html + '</div></article>';
+  }
+  function prizeRow(p, i, n) {
+    return '<div class="grow" data-i="' + i + '" data-id="' + esc(p.id || '') + '"><input class="input gname" type="text" autocomplete="off" placeholder="ชื่อรางวัล เช่น Hit, SAR" value="' + esc(p.name || '') + '" aria-label="ชื่อรางวัล">' +
+      '<input class="input gqty" type="number" inputmode="numeric" min="1" placeholder="จำนวน" value="' + (p.qty || '') + '" aria-label="จำนวนรางวัล">' +
+      (n > 1 ? '<button type="button" class="link danger" data-grm="' + i + '">ลบ</button>' : '<span></span>') + '</div>';
+  }
+  function readPrizes() {
+    return Array.prototype.map.call(document.querySelectorAll('#gPrizes .grow'), function (r) {
+      return { id: r.dataset.id || '', name: r.querySelector('.gname').value.trim(), qty: parseInt(r.querySelector('.gqty').value, 10) || 0 };
+    });
+  }
+  function drawPrizes(list) { $('gPrizes').innerHTML = list.map(function (p, i) { return prizeRow(p, i, list.length); }).join(''); }
+  function openGacha() {
+    if (S.mode === 'loading') return;
+    S.sheet = { kind: 'gacha', acct: firstAcct('bank') };
+    $('shTitle').textContent = 'เปิดตู้สุ่มใหม่';
+    $('shForm').innerHTML =
+      fld('gName', 'ชื่อตู้', '<input class="input" id="gName" type="text" autocomplete="off" placeholder="เช่น ตู้สุ่ม Pokémon รอบ 1">') +
+      fld('gCost', 'ทุนทั้งตู้ (จ่ายไปทั้งหมด)', '<input class="input" id="gCost" type="number" inputmode="decimal" min="0" step="0.01" placeholder="เช่น 80000">') +
+      '<div class="two">' + fld('gTickets', 'สุ่มได้ทั้งหมดกี่ครั้ง', '<input class="input" id="gTickets" type="number" inputmode="numeric" min="1" value="280">') +
+      fld('gPrice', 'ราคาต่อครั้ง (บาท)', '<input class="input" id="gPrice" type="number" inputmode="decimal" min="0" step="0.01" value="400">') + '</div>' +
+      '<div class="fgroup"><p class="lbl">รางวัลในตู้</p><div class="fgroup" id="gPrizes"></div><button type="button" class="btn-quiet" id="gAdd">＋ เพิ่มรางวัลอีกแบบ</button>' +
+      '<p class="hint">ถ้ามีแค่ "ได้ Hit / ไม่ได้" ใส่แถวเดียวพอ ถ้าแบ่งระดับ เช่น SAR, AR ให้เพิ่มทีละแถว</p></div>' +
+      '<p class="calc" id="gCalc"></p>' +
+      '<div class="fgroup"><p class="lbl">จ่ายเงินจาก</p><div class="chips" id="shAcct">' + acctChipsHtml(S.sheet.acct) + '</div></div>' +
+      fld('gDate', 'วันที่เปิดตู้', '<input class="input" id="gDate" type="date" value="' + ymd(new Date()) + '">') +
+      '<button class="btn-main" type="submit">เปิดตู้นี้</button>';
+    drawPrizes([{ name: 'Hit', qty: 61 }]);
+    showSheet(); calcSheet();
+    setTimeout(function () { $('gName').focus(); }, 50);
+  }
+  function openSellGacha(id) {
+    var l = lotById(id), o = lotStats()[id], gi = gachaInfo(l, o);
+    S.sheet = { kind: 'sell', gacha: true, lot: id, item: gi.t ? gi.t.id : 't', ch: 'shop', edited: false, o: o, price: l.gacha.price, costPer: gi.t ? gi.t.costPer : 0, left: gi.left, prizes: gi.prizes };
+    $('shTitle').textContent = 'ขายสุ่ม: ' + l.name;
+    $('shForm').innerHTML =
+      '<p class="sub">เหลือ ' + gi.left + ' ครั้ง · รางวัลเหลือ ' + gi.hitLeft + ' · ครั้งละ ' + baht(l.gacha.price) + '</p>' +
+      '<div class="fgroup"><p class="lbl">ลูกค้าสุ่มกี่ครั้ง</p><div class="stepper"><button type="button" data-q="-1" aria-label="ลด">−</button><input class="input" id="sQty" type="number" inputmode="numeric" min="1" value="1" aria-label="จำนวนครั้ง"><button type="button" data-q="1" aria-label="เพิ่ม">+</button></div></div>' +
+      '<div class="fgroup"><p class="lbl">ได้รางวัลอะไรบ้าง (ไม่ได้ก็ปล่อย 0)</p>' + gi.prizes.map(function (p) {
+        return '<div class="hitrow" data-pid="' + esc(p.id) + '"><span><b>' + esc(p.name) + '</b><span class="sub">เหลือ ' + Math.max(0, p.qty - p.out) + '</span></span><button type="button" data-hd="-1" aria-label="ลด">−</button><input class="input hq" type="number" inputmode="numeric" min="0" value="0" aria-label="จำนวน ' + esc(p.name) + '"><button type="button" data-hd="1" aria-label="เพิ่ม">+</button></div>';
+      }).join('') + '</div>' +
+      fld('sTotal', 'รับเงินทั้งหมด (แก้ได้ถ้ามีส่วนลด)', '<input class="input" id="sTotal" type="number" inputmode="decimal" min="0" step="0.01">') +
+      '<p class="calc" id="sCalc"></p>' +
+      '<div class="fgroup"><p class="lbl">ขายทางไหน</p><div class="chips" id="shCh">' +
+        '<button type="button" class="chip" data-ch="shop" aria-pressed="true">หน้าร้าน (เงินสด)</button>' +
+        '<button type="button" class="chip" data-ch="transfer" aria-pressed="false">โอนเข้าบัญชี</button>' +
+        '<button type="button" class="chip" data-ch="tiktok" aria-pressed="false">TikTok (รอเงินเข้า)</button></div></div>' +
+      fld('sDate', 'วันที่', '<input class="input" id="sDate" type="date" value="' + ymd(new Date()) + '">') +
+      '<button class="btn-main" type="submit">บันทึกการสุ่ม</button>';
+    showSheet(); calcSheet();
+    setTimeout(function () { $('sQty').select(); }, 50);
   }
   function packLotCard(l, o) {
     var open = !!S.lotOpen[l.id], pc = cls(o.profit), u = o.single ? o.single.unit : 'ชิ้น';
@@ -1885,6 +1984,7 @@ body { font-size: 15.5px; }
   function openSell(id) {
     if (S.mode === 'loading') return;
     var l = lotById(id); if (!l) return;
+    if (l.gacha) { openSellGacha(id); return; }
     var o = lotStats()[id];
     if (!o.list.length) {
       S.sheet = { kind: 'sell', simple: true, lot: id, ch: 'shop' };
@@ -1977,6 +2077,27 @@ body { font-size: 15.5px; }
   }
   function calcSheet() {
     var sh = S.sheet; if (!sh || sh.kind === 'prod' || sh.simple || sh.kind === 'stockset') return;
+    if (sh.kind === 'gacha') {
+      var gc = parseFloat($('gCost').value) || 0, gt = parseInt($('gTickets').value, 10) || 0, gp = parseFloat($('gPrice').value) || 0;
+      var hits = readPrizes().reduce(function (a, x) { return a + x.qty; }, 0), out = [];
+      if (gt > 0 && gp > 0) out.push('ถ้าขายหมดได้ <b>' + baht(gt * gp) + '</b>' + (gc > 0 ? ' กำไร <b class="' + (gt * gp - gc >= 0 ? 'pos' : 'neg') + '">' + signed(gt * gp - gc) + '</b>' : ''));
+      if (gc > 0 && gp > 0) out.push('คืนทุนเมื่อขายได้ ' + Math.ceil(gc / gp) + ' ครั้ง');
+      if (gt > 0 && hits > 0) out.push('โอกาสได้รางวัล ' + (Math.round(hits / gt * 1000) / 10) + '% (ประมาณ 1 ใน ' + (Math.round(gt / hits * 10) / 10) + ' ครั้ง)');
+      if (hits > gt && gt > 0) out.push('<span class="neg">รางวัลมากกว่าจำนวนครั้ง</span>');
+      $('gCalc').innerHTML = out.join('<br>');
+      return;
+    }
+    if (sh.gacha) {
+      var q3 = parseInt($('sQty').value, 10) || 0;
+      if (!sh.edited) $('sTotal').value = q3 > 0 ? r2(q3 * sh.price) : '';
+      var t3 = parseFloat($('sTotal').value) || 0, h3 = 0, o3 = [];
+      Array.prototype.forEach.call(document.querySelectorAll('.hitrow .hq'), function (x) { h3 += parseInt(x.value, 10) || 0; });
+      if (q3 > 0 && t3 > 0 && sh.costPer > 0) { var pf3 = t3 - q3 * sh.costPer; o3.push('กำไรรอบนี้ <b class="' + (pf3 >= 0 ? 'pos' : 'neg') + '">' + signed(Math.round(pf3)) + '</b>'); }
+      if (h3 > q3) o3.push('<span class="neg">รางวัลมากกว่าจำนวนครั้งที่สุ่ม</span>');
+      if (q3 > sh.left) o3.push('<span class="neg">เกินจำนวนครั้งที่เหลือ (' + sh.left + ')</span>');
+      $('sCalc').innerHTML = o3.join('<br>');
+      return;
+    }
     if (sh.kind === 'stockin') {
       var kq2 = parseInt($('kQty').value, 10), kc2 = parseFloat($('kCost').value);
       $('kCalc').innerHTML = kq2 > 0 && kc2 > 0 ? 'รวมเป็นเงิน <b>' + baht(kq2 * kc2) + '</b>' : '';
@@ -2007,6 +2128,55 @@ body { font-size: 15.5px; }
     ev.preventDefault();
     var sh = S.sheet; if (!sh) return;
     var a, date, entry;
+    if (sh.kind === 'gacha') {
+      var gn = $('gName').value.trim(), gco = r2(parseFloat($('gCost').value)), gtk = parseInt($('gTickets').value, 10), gpr = r2(parseFloat($('gPrice').value));
+      var gpz = readPrizes().filter(function (x) { return x.name || x.qty > 0; });
+      date = $('gDate').value; a = acctById(sh.acct);
+      if (!gn) { shSay('ตั้งชื่อตู้ก่อน'); $('gName').focus(); return; }
+      if (!(gco > 0)) { shSay('ใส่ทุนทั้งตู้'); $('gCost').focus(); return; }
+      if (!(gtk > 0)) { shSay('ใส่จำนวนครั้งทั้งหมด'); $('gTickets').focus(); return; }
+      if (!(gpr > 0)) { shSay('ใส่ราคาต่อครั้ง'); $('gPrice').focus(); return; }
+      for (var gi2 = 0; gi2 < gpz.length; gi2++) {
+        if (!(gpz[gi2].qty > 0)) { shSay('ใส่จำนวนของรางวัล "' + (gpz[gi2].name || 'แถวที่ ' + (gi2 + 1)) + '"'); return; }
+        if (!gpz[gi2].name) gpz[gi2].name = 'รางวัล ' + (gi2 + 1);
+        gpz[gi2].id = 'z' + uid() + gi2;
+      }
+      if (!date) { shSay('เลือกวันที่'); return; }
+      if (!a) { shSay('เลือกบัญชีที่จ่าย'); return; }
+      var glot = { id: 'l' + uid(), name: gn, date: date, closed: false, items: [{ id: 't', name: gn, unit: 'ครั้ง', qty: gtk }], gacha: { tickets: gtk, price: gpr, prizes: gpz } };
+      S.lots = S.lots.concat([glot]);
+      entry = { id: uid(), type: 'expense', amount: gco, cat: 'ซื้อสต็อกการ์ด', method: a.kind === 'bank' ? 'transfer' : 'cash', acct: a.id, ref: '', note: 'เปิดตู้สุ่ม', t: Date.now(), lot: glot.id };
+      persistSettings();
+      var gday = S.days[date] || { entries: [] };
+      S.days[date] = { entries: gday.entries.concat([entry]) };
+      persist(date); hideSheet(); S.lotView = 'lot'; render(); toast('เปิดตู้สุ่มแล้ว');
+      return;
+    }
+    if (sh.gacha) {
+      var gq = parseInt($('sQty').value, 10), gtot = r2(parseFloat($('sTotal').value)), hits = {}, hsum = 0, hbad = '';
+      Array.prototype.forEach.call(document.querySelectorAll('.hitrow'), function (r) {
+        var k = parseInt(r.querySelector('.hq').value, 10) || 0, pz = sh.prizes.filter(function (x) { return x.id === r.dataset.pid; })[0];
+        if (k > 0) { hits[r.dataset.pid] = k; hsum += k; if (pz && k > pz.qty - pz.out) hbad = pz.name; }
+      });
+      date = $('sDate').value;
+      if (!(gq > 0)) { shSay('ใส่จำนวนครั้ง'); $('sQty').focus(); return; }
+      if (!(gtot > 0)) { shSay('ใส่เงินที่รับ'); $('sTotal').focus(); return; }
+      if (hsum > gq) { shSay('รางวัลมากกว่าจำนวนครั้งที่สุ่ม'); return; }
+      if (hbad) { shSay('รางวัล "' + hbad + '" เหลือไม่พอ'); return; }
+      if (!date) { shSay('เลือกวันที่'); return; }
+      a = acctById(firstAcct(sh.ch === 'shop' ? 'cash' : 'bank'));
+      if (!a) { shSay('ยังไม่มีบัญชี'); return; }
+      var hnote = Object.keys(hits).map(function (k) { var pz = sh.prizes.filter(function (x) { return x.id === k; })[0]; return (pz ? pz.name : 'รางวัล') + ' ' + hits[k]; }).join(', ');
+      entry = { id: uid(), type: 'income', amount: gtot, cat: sh.ch === 'tiktok' ? 'ขายผ่าน TikTok Shop' : 'รายรับอื่น', method: a.kind === 'bank' ? 'transfer' : 'cash', acct: a.id, ref: '', note: 'สุ่ม ' + gq + ' ครั้ง' + (hnote ? ' ได้ ' + hnote : ''), t: Date.now(), lot: sh.lot, item: sh.item, qty: gq };
+      if (hsum) entry.hits = hits;
+      if (!sh.edited) entry.unitPrice = sh.price;
+      if (sh.ch === 'tiktok') entry.pending = true;
+      var sday = S.days[date] || { entries: [] };
+      S.days[date] = { entries: sday.entries.concat([entry]) };
+      var sd0 = parseYmd(date); S.y = sd0.getFullYear(); S.m = sd0.getMonth();
+      persist(date); hideSheet(); render(); toast('บันทึกการสุ่มแล้ว' + (hsum ? ' ออกรางวัล ' + hsum : ''));
+      return;
+    }
     if (sh.kind === 'stockin') {
       var kp = prodById(sh.prod); if (!kp) { hideSheet(); return; }
       var kq = parseInt($('kQty').value, 10), kc = parseFloat($('kCost').value) || 0, kpaid = $('kPaid').checked;
@@ -2120,6 +2290,7 @@ body { font-size: 15.5px; }
     else if (b.dataset.act2 === 'sell') openSell(b.dataset.id);
     else if (b.dataset.act2 === 'sell-any') sellAny();
     else if (b.dataset.act2 === 'newprod') openNewProduct();
+    else if (b.dataset.act2 === 'gacha') openGacha();
     else if (b.dataset.act2 === 'stockin') openStockIn(b.dataset.id);
     else if (b.dataset.act2 === 'stockset') openStockSet(b.dataset.id);
     else if (b.dataset.act2 === 'selldirect') openSellDirect(b.dataset.id);
@@ -2152,12 +2323,15 @@ body { font-size: 15.5px; }
       if (pr && row) { row.querySelector('.iname').value = pr.name; if (pr.unit) row.querySelector('.iunit').value = pr.unit; row.querySelector('.isugg').innerHTML = ''; row.querySelector('.iqty').focus(); calcSheet(); }
       return;
     }
+    if (b.id === 'gAdd') { var gl = readPrizes(); gl.push({}); drawPrizes(gl); calcSheet(); return; }
+    if (b.dataset.grm) { var gr = readPrizes(); gr.splice(+b.dataset.grm, 1); drawPrizes(gr); calcSheet(); return; }
+    if (b.dataset.hd) { var hin = b.closest('.hitrow').querySelector('.hq'); hin.value = Math.max(0, (parseInt(hin.value, 10) || 0) + parseInt(b.dataset.hd, 10)); calcSheet(); return; }
     if (b.id === 'addItem') { var li = readItems(); li.push({ unit: (li[li.length - 1] || {}).unit || 'ชิ้น' }); drawItems(li); calcSheet(); var r = document.querySelectorAll('#itemsHost .iname'); r[r.length - 1].focus(); }
     else if (b.dataset.rm) { var lr = readItems(); lr.splice(+b.dataset.rm, 1); drawItems(lr); calcSheet(); }
     else if (b.dataset.a) { sh.acct = b.dataset.a; $('shAcct').innerHTML = acctChipsHtml(sh.acct); }
     else if (b.dataset.it) { sh.item = b.dataset.it; applyItem(); }
     else if (b.dataset.ch) { sh.ch = b.dataset.ch; Array.prototype.forEach.call($('shCh').children, function (c) { c.setAttribute('aria-pressed', String(c.dataset.ch === sh.ch)); }); }
-    else if (b.dataset.q) { var q = (parseInt($('sQty').value, 10) || 0) + parseInt(b.dataset.q, 10); $('sQty').value = Math.max(1, q); calcSheet(); }
+    else if (b.dataset.q) { var q = (parseInt($('sQty').value, 10) || 0) + parseInt(b.dataset.q, 10); $('sQty').value = Math.max(1, q); if (sh.gacha) sh.edited = false; calcSheet(); }
   });
   $('shClose').addEventListener('click', hideSheet);
   $('sheet').addEventListener('click', function (ev) { if (ev.target === $('sheet')) hideSheet(); });
