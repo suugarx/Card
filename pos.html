@@ -638,11 +638,29 @@ body { font-size: 15.5px; }
       var rest = unk > 0 ? Math.max(0, o.stockCost - known) / unk : 0;
       o.list.forEach(function (x) { x.costPer = (x.cost > 0 && x.qty > 0) ? x.cost / x.qty * scale : rest; x.left = Math.max(0, x.qty - x.sold); });
     });
+    /* stock kept on the product itself (no lot) */
+    var dl = { id: '_direct', name: 'สต็อกร้าน', date: '9999', closed: false };
+    var dir = { lot: dl, stockCost: 0, items: {}, list: [] };
+    S.products.forEach(function (pr) {
+      var st = parseFloat(pr.stock) || 0;
+      var x = { id: pr.id, lot: dl, price: pr.price > 0 ? pr.price : 0, name: pr.name, unit: pr.unit || 'ชิ้น', qty: st, cost: 0, sold: 0, lastPer: 0, lastT: -1, costPer: parseFloat(pr.cost) > 0 ? parseFloat(pr.cost) : 0, direct: true };
+      dir.items[x.id] = x;
+    });
+    Object.keys(S.days).forEach(function (d) {
+      S.days[d].entries.forEach(function (e) {
+        if (e.type !== 'income' || e.lot || !e.prod || !dir.items[e.prod]) return;
+        var x = dir.items[e.prod], q = e.qty > 0 ? e.qty : 1;
+        x.sold += q; if ((e.t || 0) >= x.lastT) { x.lastT = e.t || 0; x.lastPer = e.unitPrice || e.amount / q; }
+      });
+    });
+    Object.keys(dir.items).forEach(function (k) { var x = dir.items[k]; x.left = Math.max(0, x.qty - x.sold); if (x.qty > 0 || x.sold > 0) dir.list.push(x); });
+    m._direct = dir;
     return m;
   }
   function products() {
     var m = stock(), out = [];
     S.lots.forEach(function (l) { if (!l.closed) m[l.id].list.forEach(function (x) { out.push(x); }); });
+    m._direct.list.forEach(function (x) { out.push(x); });
     return out;
   }
   function findItem(m, lotId, itemId) { var o = m[lotId]; return o ? o.items[itemId] || null : null; }
@@ -719,7 +737,7 @@ body { font-size: 15.5px; }
       var inCart = S.cart.filter(function (c) { return c.lot === x.lot.id && c.item === x.id; })[0];
       var out = x.left - (inCart ? inCart.qty : 0) <= 0;
       return '<button type="button" class="prod' + (out ? ' out' : '') + '" data-add="' + esc(x.lot.id) + '|' + esc(x.id) + '"' + (x.left <= 0 ? ' disabled' : '') + '>' +
-        '<span class="prod-main"><b>' + esc(x.name) + '</b><span class="sub">' + esc(x.lot.name) + ' · เหลือ ' + x.left + ' ' + esc(x.unit) + '</span></span>' +
+        '<span class="prod-main"><b>' + esc(x.name) + '</b><span class="sub">' + (x.direct ? '' : esc(x.lot.name) + ' · ') + 'เหลือ ' + x.left + ' ' + esc(x.unit) + '</span></span>' +
         '<span class="prod-side">' + ((x.lastPer || x.price) ? '<b>' + baht(Math.round((x.lastPer || x.price) * 100) / 100) + '</b>' : '<span class="sub">ตั้งราคาตอนจ่าย</span>') +
         (inCart ? '<span class="incart">ในตะกร้า ' + inCart.qty + '</span>' : '<span class="plus" aria-hidden="true">＋</span>') + '</span></button>';
     }).join('');
@@ -734,7 +752,7 @@ body { font-size: 15.5px; }
   function orderCard(o, withActions) {
     var ch = CH.filter(function (c) { return c.id === o.ch; })[0];
     var m = stock();
-    var lines = o.lines.map(function (e) { var x = findItem(m, e.lot, e.item); return esc(x ? x.name : 'สินค้า') + ' × ' + (e.qty || 1); }).join(', ');
+    var lines = o.lines.map(function (e) { var x = findItem(m, e.lot || '_direct', e.lot ? e.item : e.prod); return esc(x ? x.name : 'สินค้า') + ' × ' + (e.qty || 1); }).join(', ');
     var st = o.status === 'sent' ? '<span class="tag ok">ส่งแล้ว</span>' : '<span class="tag wait">ต้องส่ง</span>';
     var html = '<article class="ocard"><header class="ohead"><b>#' + esc(o.no || '') + (o.cust ? ' · ' + esc(o.cust) : '') + '</b>' + st + '</header>' +
       '<p class="sub">' + esc(shortDate(o.day)) + ' · ' + esc(ch ? ch.name : 'อื่นๆ') + (o.pending ? ' · รอเงินเข้า' : ' · จ่ายแล้ว') + '</p>' +
@@ -762,7 +780,7 @@ body { font-size: 15.5px; }
     var list = os.filter(function (o) { return o.day === today; });
     list.forEach(function (o) {
       sales += o.total;
-      o.lines.forEach(function (e) { var x = findItem(m, e.lot, e.item), q = e.qty || 1; qty += q; profit += e.amount - (x ? x.costPer * q : 0); });
+      o.lines.forEach(function (e) { var x = findItem(m, e.lot || '_direct', e.lot ? e.item : e.prod), q = e.qty || 1; qty += q; profit += e.amount - (x ? x.costPer * q : 0); });
     });
     $('tSales').textContent = baht(sales);
     $('tOrders').textContent = list.length;
@@ -840,7 +858,7 @@ body { font-size: 15.5px; }
       var amt = i === S.cart.length - 1 ? r2(left) : r2(sum > 0 ? tot * (c.qty * c.price) / sum : tot / S.cart.length);
       left -= amt;
       var e = { id: uid() + i, type: 'income', amount: amt, cat: ch.cat, method: a.kind === 'bank' ? 'transfer' : 'cash', acct: a.id, ref: '', note: 'ออเดอร์ #' + no + (cust ? ' ' + cust : ''), t: Date.now(),
-        lot: c.lot, item: c.item, qty: c.qty, unitPrice: c.price || undefined, ord: ordId, ordNo: no, ordSeq: seq, ch: ch.id, ost: 'pack' };
+        lot: c.lot === '_direct' ? undefined : c.lot, item: c.lot === '_direct' ? undefined : c.item, prod: c.lot === '_direct' ? c.item : undefined, qty: c.qty, unitPrice: c.price || undefined, ord: ordId, ordNo: no, ordSeq: seq, ch: ch.id, ost: 'pack' };
       if (cust) e.cust = cust;
       if (note && i === 0) e.ordNote = note;
       if (S.pay === 'pend') e.pending = true;

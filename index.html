@@ -378,6 +378,12 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
 .top3 li span:first-child { overflow-wrap: anywhere; }
 
 .warn-num { color: var(--warn); }
+.prod-tools { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.prod-tools .btn-main.sm { height: 46px; }
+.stockbox { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 14px; background: var(--accent-soft); }
+.stockbox > div:first-child { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.stockbox b { font: 700 22px var(--font-display); color: var(--accent); }
+
 /* ===== Theme: deep navy, one tone =====
    Navy carries every action and active state; green/red appear only for profit and loss. */
 :root {
@@ -639,10 +645,10 @@ body { font-size: 15.5px; }
       <div class="panel" id="prodView">
         <div class="seg sm" role="group" aria-label="ช่วงเวลา" id="prodRange"><button type="button" data-r="today" aria-pressed="true">วันนี้</button><button type="button" data-r="month" aria-pressed="false">เดือนนี้</button></div>
         <dl class="psum"><div><dt id="pSumLbl">ขายวันนี้</dt><dd id="pSumRev">฿0</dd></div><div><dt>กำไร</dt><dd id="pSumProfit">฿0</dd></div><div><dt>ของในร้าน (ทุน)</dt><dd id="pSumStock">฿0</dd></div></dl>
-        <input class="input" id="prodQ" type="search" autocomplete="off" placeholder="ค้นหาสินค้า" aria-label="ค้นหาสินค้า">
+        <div class="prod-tools"><input class="input" id="prodQ" type="search" autocomplete="off" placeholder="ค้นหาสินค้า" aria-label="ค้นหาสินค้า"><button type="button" class="btn-main sm" data-act2="newprod">＋ เพิ่มสินค้า</button></div>
         <div class="plist" id="prodList"></div>
-        <button type="button" class="btn-quiet" data-act2="newprod">＋ เพิ่มสินค้าในรายการ</button>
-        <p class="hint">สินค้าจะถูกเพิ่มเองตอนซื้อของเข้า lot ถ้าตั้งชื่อเหมือนเดิม ระบบจะรวมเป็นสินค้าเดียวกันแม้มาจากคนละ lot</p>
+
+        <p class="hint">จัดสต็อกได้ที่สินค้าแต่ละตัว: กดที่สินค้า แล้วเลือก "รับของเข้า" หรือ "แก้จำนวนให้ตรง" ของที่ซื้อเป็น lot จะรวมเข้ามาเองถ้าชื่อเหมือนกัน</p>
       </div>
       <div class="panel" id="lotView" hidden>
       <button type="button" class="btn-main" data-act2="buy">＋ ซื้อของเข้า (lot ใหม่)</button>
@@ -931,17 +937,18 @@ body { font-size: 15.5px; }
         recov[e.id] = c; wholeLeft[e.lot] -= c;
       });
     });
-    var writeOff = 0;
+    var writeOff = 0, dsm = directStock();
     Object.keys(S.days).forEach(function (d) {
       if (d.indexOf(key) !== 0) return;
       var di = 0, de = 0;
       S.days[d].entries.forEach(function (e) {
         var o = e.lot && ls[e.lot], packed = !!(o && o.packs > 0), whole = !!(o && !packed), it = packed ? itemFor(o, e) : null;
+        var dir = !e.lot && e.prod && dsm[e.prod];
         if (e.type === 'income') {
-          var c = it ? qtyOf(e, o) * it.costPer : whole ? (recov[e.id] || 0) : 0;
+          var c = it ? qtyOf(e, o) * it.costPer : whole ? (recov[e.id] || 0) : dir ? (e.qty > 0 ? e.qty : 1) * dir.cost : 0;
           inc += e.amount; di += e.amount; cogs += c; de += c;
           if (e.pending) pendM += e.amount;
-        } else if ((packed || whole) && STOCK[e.cat]) { stockIn += e.amount; }
+        } else if ((packed || whole || dir) && STOCK[e.cat]) { stockIn += e.amount; }
         else { exp += e.amount; de += e.amount; if (STOCK[e.cat]) stock += e.amount; }
         n++;
       });
@@ -964,6 +971,7 @@ body { font-size: 15.5px; }
       });
     });
     var stockVal = 0, stockLeft = 0;
+    Object.keys(dsm).forEach(function (k) { stockVal += dsm[k].left * dsm[k].cost; stockLeft += dsm[k].left; });
     S.lots.forEach(function (l) { var o = ls[l.id]; if (!l.closed && o.packs > 0) { stockVal += o.stockVal; stockLeft += o.left; } else if (!l.closed && (l.id in wholeLeft)) stockVal += Math.max(0, wholeLeft[l.id]); });
     return { inc: inc, exp: exp, cogs: cogs, net: inc - cogs - exp, stock: stock, stockIn: stockIn, n: n, per: per, pendM: pendM, cIn: cIn, cOut: cOut, cNet: cIn - cOut, pend: pend, pendN: pendN, stockVal: stockVal, stockLeft: stockLeft, ls: ls };
   }
@@ -1136,18 +1144,42 @@ body { font-size: 15.5px; }
   }
 
   /* Products roll up every lot item with the same product across lots. */
+  /* Stock kept on the product itself (counted by hand, not from a lot). */
+  function directStock() {
+    var sold = {}, last = {};
+    Object.keys(S.days).forEach(function (d) {
+      S.days[d].entries.forEach(function (e) {
+        if (e.type !== 'income' || e.lot || !e.prod) return;
+        var q = e.qty > 0 ? e.qty : 1;
+        sold[e.prod] = (sold[e.prod] || 0) + q;
+        if (!last[e.prod] || (e.t || 0) >= last[e.prod].t) last[e.prod] = { t: e.t || 0, per: e.unitPrice || e.amount / q };
+      });
+    });
+    var m = {};
+    S.products.forEach(function (pr) {
+      var st = parseFloat(pr.stock) || 0, sd = sold[pr.id] || 0;
+      m[pr.id] = { stock: st, sold: sd, left: Math.max(0, st - sd), cost: parseFloat(pr.cost) > 0 ? parseFloat(pr.cost) : 0, lastPer: last[pr.id] ? last[pr.id].per : 0, lastT: last[pr.id] ? last[pr.id].t : -1 };
+    });
+    return m;
+  }
   function productStats(inRange) {
     var ls = lotStats(), m = {}, order = [];
     var get = function (key, name, unit, id, price) {
-      if (!m[key]) { m[key] = { key: key, id: id || '', name: name, unit: unit || 'ชิ้น', price: price || 0, left: 0, stockVal: 0, qty: 0, sold: 0, rev: 0, cogs: 0, lastPer: 0, lastT: -1, costSum: 0, costN: 0, lots: [], sell: null }; order.push(key); }
+      if (!m[key]) { m[key] = { key: key, id: id || '', name: name, unit: unit || 'ชิ้น', price: price || 0, left: 0, stockVal: 0, qty: 0, sold: 0, rev: 0, cogs: 0, lastPer: 0, lastT: -1, costSum: 0, costN: 0, lots: [], sell: null, lotLeft: 0, dLeft: 0, dCost: 0 }; order.push(key); }
       return m[key];
     };
-    S.products.forEach(function (pr) { get(pr.id, pr.name, pr.unit, pr.id, pr.price); });
+    var ds = directStock();
+    S.products.forEach(function (pr) {
+      var g = get(pr.id, pr.name, pr.unit, pr.id, pr.price), dd = ds[pr.id];
+      g.dLeft = dd.left; g.dCost = dd.cost; g.left += dd.left; g.stockVal += dd.left * dd.cost;
+      g.qty += dd.stock; if (dd.cost) { g.costSum += dd.cost * Math.max(dd.stock, 0); g.costN += Math.max(dd.stock, 0); }
+      if (dd.lastT > g.lastT) { g.lastT = dd.lastT; g.lastPer = dd.lastPer; }
+    });
     S.lots.forEach(function (l) {
       ls[l.id].list.forEach(function (x) {
         var g = get(x.pkey, x.name, x.unit, x.prod, x.price);
         g.qty += x.qty; g.costSum += x.costPer * x.qty; g.costN += x.qty;
-        if (!l.closed) { g.left += x.left; g.stockVal += x.left * x.costPer; if (x.left > 0 && !g.sell) g.sell = l.id + '|' + x.id; }
+        if (!l.closed) { g.left += x.left; g.lotLeft += x.left; g.stockVal += x.left * x.costPer; if (x.left > 0 && !g.sell) g.sell = l.id + '|' + x.id; }
         g.lots.push({ lot: l, x: x });
         if (x.lastT > g.lastT) { g.lastT = x.lastT; g.lastPer = x.lastPer; }
       });
@@ -1155,7 +1187,9 @@ body { font-size: 15.5px; }
     Object.keys(S.days).forEach(function (d) {
       if (!inRange(d)) return;
       S.days[d].entries.forEach(function (e) {
-        if (e.type !== 'income' || !e.lot || !ls[e.lot]) return;
+        if (e.type !== 'income') return;
+        if (!e.lot && e.prod && m[e.prod]) { var gd = m[e.prod], qd = e.qty > 0 ? e.qty : 1; gd.sold += qd; gd.rev += e.amount; gd.cogs += qd * gd.dCost; return; }
+        if (!e.lot || !ls[e.lot]) return;
         var x = itemFor(ls[e.lot], e); if (!x) return;
         var g = m[x.pkey], q = qtyOf(e, ls[e.lot]);
         g.sold += q; g.rev += e.amount; g.cogs += q * x.costPer;
@@ -1193,7 +1227,7 @@ body { font-size: 15.5px; }
     var period = S.prodRange === 'today' ? 'วันนี้' : 'เดือนนี้';
     host.innerHTML = shown.map(function (g) {
       var open = S.prodOpen === g.key, price = g.lastPer || g.price;
-      var badge = g.qty === 0 && !g.lots.length ? '' : g.left === 0 ? '<span class="badge-out">หมด</span>' : g.left <= 3 ? '<span class="badge-low">ใกล้หมด</span>' : '';
+      var badge = g.qty <= 0 && !g.lots.length ? '' : g.left === 0 ? '<span class="badge-out">หมด</span>' : g.left <= 3 ? '<span class="badge-low">ใกล้หมด</span>' : '';
       var side = g.sold
         ? '<b class="' + (cls(g.profit) === 'zero0' ? '' : cls(g.profit)) + '">' + signed(Math.round(g.profit)) + '</b><span class="sub">ขาย ' + g.sold + ' ' + esc(g.unit) + ' · ' + baht(g.rev) + '</span>'
         : '<span class="sub">' + period + 'ยังไม่ขาย</span>';
@@ -1204,12 +1238,14 @@ body { font-size: 15.5px; }
         html += '<div class="prow-more">' +
           (g.lots.length ? '<ul class="items">' + g.lots.map(function (r) {
             return '<li><span>' + esc(r.lot.name) + (r.lot.closed ? ' (ปิดแล้ว)' : '') + '</span><span class="sub">ขายแล้ว ' + r.x.sold + '/' + r.x.qty + ' ' + esc(r.x.unit) + ' · ทุน ' + baht(Math.round(r.x.costPer * 100) / 100) + '/' + esc(r.x.unit) + '</span></li>';
-          }).join('') + '</ul>' : '<p class="sub">ยังไม่มีของในร้าน ซื้อของเข้า lot แล้วตั้งชื่อเหมือนสินค้านี้</p>') +
+          }).join('') + '</ul>' : '') +
+          (g.id ? '<div class="stockbox"><div><span class="sub">คงเหลือ</span><b>' + g.left + ' ' + esc(g.unit) + '</b>' + (g.lots.length && g.dLeft ? '<span class="sub">จาก lot ' + g.lotLeft + ' · สต็อกร้าน ' + g.dLeft + '</span>' : '') + '</div>' +
+            '<div class="slab-actions"><button type="button" class="btn-quiet" data-act2="stockin" data-id="' + esc(g.id) + '">＋ รับของเข้า</button><button type="button" class="btn-quiet" data-act2="stockset" data-id="' + esc(g.id) + '">แก้จำนวนให้ตรง</button></div></div>' : '') +
           (g.id ? '<div class="two"><div class="field"><label for="pn-' + esc(g.id) + '">ชื่อสินค้า</label><input class="input" id="pn-' + esc(g.id) + '" type="text" value="' + esc(g.name) + '"></div>' +
             '<div class="field"><label for="pp-' + esc(g.id) + '">ราคาขายปกติ (ต่อ' + esc(g.unit) + ')</label><input class="input" id="pp-' + esc(g.id) + '" type="number" inputmode="decimal" min="0" step="0.01" value="' + (g.price || '') + '" placeholder="ไม่บังคับ"></div></div>' : '') +
-          '<div class="slab-actions">' + (g.sell ? '<button type="button" class="btn-main sm" data-act2="sellprod" data-id="' + esc(g.sell) + '">ขาย ＋</button>' : '') +
+          '<div class="slab-actions">' + (g.sell ? '<button type="button" class="btn-main sm" data-act2="sellprod" data-id="' + esc(g.sell) + '">ขาย ＋</button>' : g.id ? '<button type="button" class="btn-main sm" data-act2="selldirect" data-id="' + esc(g.id) + '">ขาย ＋</button>' : '') +
           (g.id ? '<button type="button" class="btn-quiet" data-psave="' + esc(g.id) + '">บันทึก</button>' : '') +
-          (g.id && !g.lots.length ? '<button type="button" class="btn-quiet danger" data-pdel="' + esc(g.id) + '">ลบสินค้า</button>' : '') + '</div></div>';
+          (g.id && !g.lots.length && g.qty <= 0 ? '<button type="button" class="btn-quiet danger" data-pdel="' + esc(g.id) + '">ลบสินค้า</button>' : '') + '</div></div>';
       }
       return html + '</div>';
     }).join('');
@@ -1229,7 +1265,9 @@ body { font-size: 15.5px; }
       fld('npName', 'ชื่อสินค้า', '<input class="input" id="npName" type="text" autocomplete="off" placeholder="เช่น Pokémon 30th ซอง">') +
       '<div class="two">' + fld('npUnit', 'หน่วย', '<select class="input" id="npUnit">' + UNITS.map(function (u) { return '<option>' + u + '</option>'; }).join('') + '</select>') +
       fld('npPrice', 'ราคาขายปกติ (ไม่บังคับ)', '<input class="input" id="npPrice" type="number" inputmode="decimal" min="0" step="0.01" placeholder="เช่น 350">') + '</div>' +
-      '<p class="hint">สินค้าจะมีจำนวนในร้านเมื่อซื้อของเข้า lot แล้วใส่ชื่อนี้</p>' +
+      '<div class="two">' + fld('npStock', 'มีของอยู่ตอนนี้กี่ชิ้น', '<input class="input" id="npStock" type="number" inputmode="numeric" min="0" placeholder="เช่น 20">') +
+      fld('npCost', 'ทุนต่อชิ้น (ไม่บังคับ)', '<input class="input" id="npCost" type="number" inputmode="decimal" min="0" step="0.01" placeholder="เช่น 250">') + '</div>' +
+      '<p class="hint">ใส่จำนวนที่มีอยู่ได้เลย ไม่ต้องสร้าง lot ภายหลังกด "รับของเข้า" หรือ "แก้จำนวนให้ตรง" ที่สินค้านี้ได้</p>' +
       '<button class="btn-main" type="submit">เพิ่มสินค้า</button>';
     showSheet();
     setTimeout(function () { $('npName').focus(); }, 50);
@@ -1325,7 +1363,8 @@ body { font-size: 15.5px; }
     var isIn = e.type === 'income', open = S.rowOpen === e.id;
     var ac = acctById(acctOf(e)), lot = e.lot ? lotById(e.lot) : null, subs = [];
     subs.push('<span>' + esc(ac ? ac.name : 'บัญชีที่ลบแล้ว') + '</span>');
-    if (e.qty > 0) { var eo = lot ? lotStats()[lot.id] : null, eit = eo ? itemFor(eo, e) : null; subs.push('<span>' + (eit && eo.list.length > 1 ? esc(eit.name) + ' ' : '') + e.qty + ' ' + esc(eit ? eit.unit : 'ชิ้น') + '</span>'); }
+    if (!lot && e.prod && prodById(e.prod)) { var ep = prodById(e.prod); subs.push('<span>' + esc(ep.name) + (e.qty > 0 ? ' ' + e.qty + ' ' + esc(ep.unit || 'ชิ้น') : '') + '</span>'); }
+    else if (e.qty > 0) { var eo = lot ? lotStats()[lot.id] : null, eit = eo ? itemFor(eo, e) : null; subs.push('<span>' + (eit && eo.list.length > 1 ? esc(eit.name) + ' ' : '') + e.qty + ' ' + esc(eit ? eit.unit : 'ชิ้น') + '</span>'); }
     if (lot) subs.push('<span>Lot ' + esc(lot.name) + '</span>');
     if (e.recvDate) subs.push('<span>เงินเข้า ' + esc(shortDate(e.recvDate)) + '</span>');
     if (e.ref) subs.push('<span>อ้างอิง ' + esc(e.ref) + '</span>');
@@ -1866,8 +1905,39 @@ body { font-size: 15.5px; }
     var first = o.list.filter(function (x) { return x.left > 0; })[0] || o.list[0];
     S.sheet = { kind: 'sell', lot: id, ch: 'shop', edited: false, item: first.id, o: o };
     $('shTitle').textContent = 'ขาย: ' + l.name;
+    $('shForm').innerHTML = sellFormHtml(o, first);
+    showSheet(); applyItem();
+    setTimeout(function () { ($('sPrice').value ? $('sQty') : $('sPrice')).focus(); }, 50);
+  }
+  function openStockIn(prodId) {
+    var pr = prodById(prodId); if (!pr) return;
+    S.sheet = { kind: 'stockin', prod: pr.id, paid: true, acct: firstAcct('bank') };
+    $('shTitle').textContent = 'รับของเข้า: ' + pr.name;
     $('shForm').innerHTML =
-      (o.list.length > 1 ? '<div class="fgroup"><p class="lbl">ขายอะไร</p><div class="chips" id="shItem">' + o.list.map(function (x) {
+      '<div class="two">' + fld('kQty', 'รับเข้ากี่' + esc(pr.unit || 'ชิ้น'), '<input class="input" id="kQty" type="number" inputmode="numeric" min="1" placeholder="เช่น 10">') +
+      fld('kCost', 'ทุนต่อ' + esc(pr.unit || 'ชิ้น') + ' (ไม่บังคับ)', '<input class="input" id="kCost" type="number" inputmode="decimal" min="0" step="0.01" value="' + (pr.cost || '') + '" placeholder="เช่น 250">') + '</div>' +
+      '<p class="calc" id="kCalc"></p>' +
+      '<label class="chk"><input type="checkbox" id="kPaid" checked><span>บันทึกเงินที่จ่ายซื้อด้วย</span></label>' +
+      '<div id="kPayBox"><div class="fgroup"><p class="lbl">จ่ายเงินจาก</p><div class="chips" id="shAcct">' + acctChipsHtml(S.sheet.acct) + '</div></div>' +
+      fld('kDate', 'วันที่', '<input class="input" id="kDate" type="date" value="' + ymd(new Date()) + '">') + '</div>' +
+      '<button class="btn-main" type="submit">รับของเข้า</button>';
+    showSheet();
+    setTimeout(function () { $('kQty').focus(); }, 50);
+  }
+  function openStockSet(prodId) {
+    var pr = prodById(prodId); if (!pr) return;
+    var g = productStats(function () { return false; }).filter(function (x) { return x.id === pr.id; })[0];
+    S.sheet = { kind: 'stockset', prod: pr.id, cur: g ? g.left : 0, lotLeft: g ? g.lotLeft : 0 };
+    $('shTitle').textContent = 'แก้จำนวน: ' + pr.name;
+    $('shForm').innerHTML =
+      '<p class="sub">ตอนนี้ระบบนับได้ ' + S.sheet.cur + ' ' + esc(pr.unit || 'ชิ้น') + ' นับของจริงแล้วใส่จำนวนที่มีอยู่</p>' +
+      fld('kCount', 'มีอยู่จริงกี่' + esc(pr.unit || 'ชิ้น'), '<input class="input" id="kCount" type="number" inputmode="numeric" min="0" value="' + S.sheet.cur + '">') +
+      '<button class="btn-main" type="submit">บันทึกจำนวน</button>';
+    showSheet();
+    setTimeout(function () { $('kCount').select(); }, 50);
+  }
+  function sellFormHtml(o, first) {
+    return (o.list.length > 1 ? '<div class="fgroup"><p class="lbl">ขายอะไร</p><div class="chips" id="shItem">' + o.list.map(function (x) {
         return '<button type="button" class="chip" data-it="' + esc(x.id) + '" aria-pressed="' + (x.id === first.id) + '">' + esc(x.name) + '<span class="n">' + x.left + '</span></button>';
       }).join('') + '</div></div>' : '') +
       '<p class="sub" id="sInfo"></p>' +
@@ -1882,6 +1952,16 @@ body { font-size: 15.5px; }
         '<button type="button" class="chip" data-ch="tiktok" aria-pressed="false">TikTok (รอเงินเข้า)</button></div></div>' +
       fld('sDate', 'วันที่ขาย', '<input class="input" id="sDate" type="date" value="' + ymd(new Date()) + '">') +
       '<button class="btn-main" type="submit">บันทึกการขาย</button>';
+  }
+  function openSellDirect(prodId) {
+    if (S.mode === 'loading') return;
+    var pr = prodById(prodId); if (!pr) return;
+    var dd = directStock()[pr.id];
+    var x = { id: pr.id, name: pr.name, unit: pr.unit || 'ชิ้น', left: dd.left, costPer: dd.cost, lastPer: dd.lastPer, price: pr.price || 0 };
+    var o = { items: {}, list: [x] }; o.items[x.id] = x;
+    S.sheet = { kind: 'sell', lot: '', direct: pr.id, ch: 'shop', edited: false, item: pr.id, o: o };
+    $('shTitle').textContent = 'ขาย: ' + pr.name;
+    $('shForm').innerHTML = sellFormHtml(o, x);
     showSheet(); applyItem();
     setTimeout(function () { ($('sPrice').value ? $('sQty') : $('sPrice')).focus(); }, 50);
   }
@@ -1896,7 +1976,13 @@ body { font-size: 15.5px; }
     calcSheet();
   }
   function calcSheet() {
-    var sh = S.sheet; if (!sh || sh.kind === 'prod' || sh.simple) return;
+    var sh = S.sheet; if (!sh || sh.kind === 'prod' || sh.simple || sh.kind === 'stockset') return;
+    if (sh.kind === 'stockin') {
+      var kq2 = parseInt($('kQty').value, 10), kc2 = parseFloat($('kCost').value);
+      $('kCalc').innerHTML = kq2 > 0 && kc2 > 0 ? 'รวมเป็นเงิน <b>' + baht(kq2 * kc2) + '</b>' : '';
+      $('kPayBox').hidden = !$('kPaid').checked;
+      return;
+    }
     if (sh.kind === 'buy') {
       var paid = sh.edit ? sh.paid : (parseFloat($('bCost').value) || 0);
       var list = readItems().filter(function (x) { return x.qty > 0; });
@@ -1921,12 +2007,45 @@ body { font-size: 15.5px; }
     ev.preventDefault();
     var sh = S.sheet; if (!sh) return;
     var a, date, entry;
+    if (sh.kind === 'stockin') {
+      var kp = prodById(sh.prod); if (!kp) { hideSheet(); return; }
+      var kq = parseInt($('kQty').value, 10), kc = parseFloat($('kCost').value) || 0, kpaid = $('kPaid').checked;
+      if (!(kq > 0)) { shSay('ใส่จำนวนที่รับเข้า'); $('kQty').focus(); return; }
+      var dnow = directStock()[kp.id];
+      if (kc > 0) kp.cost = Math.round(((dnow.cost || kc) * dnow.left + kc * kq) / (dnow.left + kq) * 10000) / 10000;
+      kp.stock = Math.max(dnow.stock, dnow.sold) + kq;
+      persistSettings();
+      if (kpaid && kc > 0) {
+        var ka = acctById(sh.acct), kd = $('kDate').value || ymd(new Date());
+        if (ka) {
+          var ke = { id: uid(), type: 'expense', amount: r2(kc * kq), cat: 'ซื้อสต็อกการ์ด', method: ka.kind === 'bank' ? 'transfer' : 'cash', acct: ka.id, ref: '', note: 'รับ ' + kp.name + ' ' + kq + ' ' + (kp.unit || 'ชิ้น'), t: Date.now(), prod: kp.id, qty: kq };
+          var kday = S.days[kd] || { entries: [] };
+          S.days[kd] = { entries: kday.entries.concat([ke]) };
+          persist(kd);
+        }
+      }
+      hideSheet(); render(); toast('รับของเข้าแล้ว +' + kq + ' ' + (kp.unit || 'ชิ้น'));
+      return;
+    }
+    if (sh.kind === 'stockset') {
+      var sp2 = prodById(sh.prod); if (!sp2) { hideSheet(); return; }
+      var cnt = parseInt($('kCount').value, 10);
+      if (!(cnt >= 0)) { shSay('ใส่จำนวนที่มีอยู่จริง'); return; }
+      if (cnt < sh.lotLeft) { shSay('สินค้านี้ยังมีใน lot อีก ' + sh.lotLeft + ' ชิ้น แก้จำนวนใน lot ก่อน หรือใส่อย่างน้อย ' + sh.lotLeft); return; }
+      var dn2 = directStock()[sp2.id];
+      sp2.stock = dn2.sold + (cnt - sh.lotLeft);
+      persistSettings(); hideSheet(); render(); toast('แก้จำนวนแล้ว เหลือ ' + cnt + ' ' + (sp2.unit || 'ชิ้น'));
+      return;
+    }
     if (sh.kind === 'prod') {
       var pn = $('npName').value.trim(), pp = parseFloat($('npPrice').value);
       if (!pn) { shSay('ใส่ชื่อสินค้า'); $('npName').focus(); return; }
       if (prodByName(pn)) { shSay('มีสินค้าชื่อนี้อยู่แล้ว'); return; }
       var np = { id: 'p' + uid(), name: pn, unit: $('npUnit').value };
       if (pp > 0) np.price = r2(pp);
+      var nst = parseInt($('npStock').value, 10), nco = parseFloat($('npCost').value);
+      if (nst > 0) np.stock = nst;
+      if (nco > 0) np.cost = r2(nco);
       S.products = S.products.concat([np]);
       persistSettings(); hideSheet(); render(); toast('เพิ่มสินค้าแล้ว');
       return;
@@ -1976,6 +2095,8 @@ body { font-size: 15.5px; }
       a = acctById(firstAcct(sh.ch === 'shop' ? 'cash' : 'bank'));
       if (!a) { shSay('ยังไม่มีบัญชี'); return; }
       entry = { id: uid(), type: 'income', amount: tot, cat: sh.ch === 'tiktok' ? 'ขายผ่าน TikTok Shop' : 'ขายกล่องและซองการ์ด', method: a.kind === 'bank' ? 'transfer' : 'cash', acct: a.id, ref: '', note: sh.edited ? 'ราคาพิเศษ' : '', t: Date.now(), lot: sh.lot, qty: q, item: sh.item };
+      if (sh.direct) { delete entry.lot; delete entry.item; entry.prod = sh.direct; }
+      var pv = parseFloat($('sPrice').value); if (!sh.edited && pv > 0) entry.unitPrice = r2(pv);
       if (sh.ch === 'tiktok') entry.pending = true;
     }
     var day = S.days[date] || { entries: [] };
@@ -1999,6 +2120,9 @@ body { font-size: 15.5px; }
     else if (b.dataset.act2 === 'sell') openSell(b.dataset.id);
     else if (b.dataset.act2 === 'sell-any') sellAny();
     else if (b.dataset.act2 === 'newprod') openNewProduct();
+    else if (b.dataset.act2 === 'stockin') openStockIn(b.dataset.id);
+    else if (b.dataset.act2 === 'stockset') openStockSet(b.dataset.id);
+    else if (b.dataset.act2 === 'selldirect') openSellDirect(b.dataset.id);
     else if (b.dataset.act2 === 'sellprod') { var sp = b.dataset.id.split('|'); openSell(sp[0]); if (S.sheet && S.sheet.o.items[sp[1]]) { S.sheet.item = sp[1]; applyItem(); } }
   });
   $('shForm').addEventListener('submit', submitSheet);
