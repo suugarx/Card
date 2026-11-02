@@ -359,6 +359,23 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
 .pos-link { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: 18px; background: var(--accent-soft); color: var(--ink); text-decoration: none; }
 .pos-link b { font: 600 17px var(--font-display); color: var(--accent); }
 .pos-link span { font-size: 13px; color: var(--muted); }
+
+.prow { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.prow-btn { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left; padding: 14px; border: 0; background: transparent; color: var(--ink); border-radius: 16px; }
+.prow-main { display: flex; flex-direction: column; min-width: 0; }
+.prow-main b { font-weight: 600; overflow-wrap: anywhere; }
+.prow-side { display: flex; flex-direction: column; align-items: flex-end; flex: none; text-align: right; }
+.prow-side b { font: 600 17px var(--font-display); font-variant-numeric: tabular-nums; }
+.prow-more { display: flex; flex-direction: column; gap: 12px; padding: 0 14px 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+.plist { display: flex; flex-direction: column; gap: 8px; }
+.psum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); }
+.psum dt { font-size: 12.5px; color: var(--muted); }
+.psum dd { font: 600 17px var(--font-display); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.badge-low { display: inline-block; font-size: 11.5px; padding: 0 8px; border-radius: 999px; background: var(--warn-bg); color: var(--warn); margin-left: 6px; font-weight: 500; }
+.badge-out { display: inline-block; font-size: 11.5px; padding: 0 8px; border-radius: 999px; background: var(--soft); color: var(--muted); margin-left: 6px; font-weight: 500; }
+.top3 { display: flex; flex-direction: column; gap: 8px; }
+.top3 li { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.top3 li span:first-child { overflow-wrap: anywhere; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
@@ -430,6 +447,11 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
         <button type="button" class="shortcut" id="pendStrip" data-go="money" data-money="pend"><span>เงินรอเข้า</span><b id="pendVal">฿0</b><small id="pendStripText"></small></button>
       </div>
       <button class="link" type="button" data-go="money" data-money="acct">ดูเงินในแต่ละบัญชี ›</button>
+
+      <section class="sec" aria-labelledby="topTitle" id="topWidget" hidden>
+        <div class="sec-head"><h2 id="topTitle">ขายดีวันนี้</h2><button class="link" type="button" data-go="lot" data-pv="prod">ดูสินค้าทั้งหมด</button></div>
+        <ul class="plate top3" id="topList"></ul>
+      </section>
 
       <section class="sec" aria-labelledby="lotWTitle" id="lotWidget" hidden>
         <div class="sec-head"><h2 id="lotWTitle">Lot ที่กำลังขาย</h2><button class="link" type="button" data-go="lot">ดูทั้งหมด</button></div>
@@ -514,7 +536,17 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
     </section>
 
     <!-- Lot -->
-    <section class="panel" id="p-lot" role="tabpanel" aria-label="Lot" hidden>
+    <section class="panel" id="p-lot" role="tabpanel" aria-label="สินค้า" hidden>
+      <div class="seg" role="group" aria-label="เลือกมุมมอง"><button type="button" id="vProd" aria-pressed="true">สินค้า</button><button type="button" id="vLot" aria-pressed="false">Lot (รอบที่ซื้อ)</button></div>
+      <div class="panel" id="prodView">
+        <div class="seg sm" role="group" aria-label="ช่วงเวลา" id="prodRange"><button type="button" data-r="today" aria-pressed="true">วันนี้</button><button type="button" data-r="month" aria-pressed="false">เดือนนี้</button></div>
+        <dl class="psum"><div><dt id="pSumLbl">ขายวันนี้</dt><dd id="pSumRev">฿0</dd></div><div><dt>กำไร</dt><dd id="pSumProfit">฿0</dd></div><div><dt>ของในร้าน (ทุน)</dt><dd id="pSumStock">฿0</dd></div></dl>
+        <input class="input" id="prodQ" type="search" autocomplete="off" placeholder="ค้นหาสินค้า" aria-label="ค้นหาสินค้า">
+        <div class="plist" id="prodList"></div>
+        <button type="button" class="btn-quiet" data-act2="newprod">＋ เพิ่มสินค้าในรายการ</button>
+        <p class="hint">สินค้าจะถูกเพิ่มเองตอนซื้อของเข้า lot ถ้าตั้งชื่อเหมือนเดิม ระบบจะรวมเป็นสินค้าเดียวกันแม้มาจากคนละ lot</p>
+      </div>
+      <div class="panel" id="lotView" hidden>
       <button type="button" class="btn-main" data-act2="buy">＋ ซื้อของเข้า (lot ใหม่)</button>
       <p class="sub">1 lot = 1 รอบที่ซื้อของเข้าร้าน ใน lot ใส่ของได้หลายอย่าง (กล่อง ซอง การ์ดใบ อุปกรณ์) ระบบคิดทุนต่อชิ้นและกำไรของรอบนั้นให้</p>
       <div class="chips" id="lotFilter" role="group" aria-label="กรอง lot">
@@ -522,6 +554,7 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
         <button type="button" class="chip" data-f="closed" aria-pressed="false">ปิดแล้ว</button>
       </div>
       <div class="panel" id="lotList"></div>
+      </div>
     </section>
 
     <!-- เงิน -->
@@ -559,7 +592,7 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg><span>ภาพรวม</span>
         </button>
         <button class="tab" type="button" role="tab" data-tab="lot" aria-selected="false">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 21 8.5 12 13.5 3 8.5z"/><path d="M3 12.5l9 5 9-5"/></svg><span>Lot</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 21 8.5 12 13.5 3 8.5z"/><path d="M3 12.5l9 5 9-5"/></svg><span>สินค้า</span>
         </button>
         <button class="tab add" type="button" role="tab" data-tab="add" aria-selected="false">
           <span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span>บันทึกอื่นๆ</span>
@@ -597,7 +630,7 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
   ];
   var FEE_CAT = 'ค่าธรรมเนียมแพลตฟอร์ม';
   var STOCK = { 'ซื้อสต็อกการ์ด': 1, 'รับซื้อการ์ดจากลูกค้า': 1 };
-  var TABS = { home: 'ภาพรวม', hist: 'รายการ', add: 'บันทึกรายการ', lot: 'Lot / สต็อก', money: 'เงิน' };
+  var TABS = { home: 'ภาพรวม', hist: 'รายการ', add: 'บันทึกรายการ', lot: 'สินค้า', money: 'เงิน' };
   var defaultAccts = function () {
     return [{ id: 'cash', name: 'เงินสด', kind: 'cash', open: 0 }, { id: 'bank1', name: 'บัญชีธนาคาร', kind: 'bank', open: 0 }];
   };
@@ -626,13 +659,22 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
   var now = new Date();
   var S = {
     days: {}, accounts: defaultAccts(), lots: [],
-    tab: 'home', moneyView: 'pend', histFilter: 'all', bdView: 'expense', lotFilter: 'open',
+    tab: 'home', moneyView: 'pend', histFilter: 'all', bdView: 'expense', lotFilter: 'open', products: [], lotView: 'prod', prodRange: 'today', prodQ: '', prodOpen: null,
     y: now.getFullYear(), m: now.getMonth(), mode: 'loading', notice: '',
     type: 'income', cat: '', acctSel: '', lotSel: '',
     manage: false, armed: null, recvId: null, rowOpen: null, lotOpen: {}, dupOK: null, stats: null
   };
   var acctById = function (id) { return S.accounts.filter(function (a) { return a.id === id; })[0] || null; };
   var lotById = function (id) { return S.lots.filter(function (l) { return l.id === id; })[0] || null; };
+  var prodById = function (id) { return S.products.filter(function (x) { return x.id === id; })[0] || null; };
+  var normName = function (n) { return String(n || '').trim().toLowerCase().replace(/\s+/g, ' '); };
+  var prodByName = function (n) { var k = normName(n); return k ? S.products.filter(function (x) { return normName(x.name) === k; })[0] || null : null; };
+  /* Every lot item points at a product in the shop's list; a new name adds a product. */
+  function linkProduct(name, unit) {
+    var pr = prodByName(name);
+    if (!pr) { pr = { id: 'p' + uid(), name: String(name).trim(), unit: unit || 'ชิ้น' }; S.products = S.products.concat([pr]); }
+    return pr.id;
+  }
   var queue = Promise.resolve();
   var armTimer = null, msgTimer = null;
 
@@ -643,10 +685,10 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
   /* The settings row keeps accounts and lots together in the existing `accounts` JSON column,
      so no database change is needed. Older rows hold a plain array of accounts. */
   function unpackSettings(raw) {
-    var a = null, l = [];
+    var a = null, l = [], pr = [];
     if (Array.isArray(raw)) a = raw;
-    else if (raw && Array.isArray(raw.accounts)) { a = raw.accounts; l = Array.isArray(raw.lots) ? raw.lots : []; }
-    return { accounts: (a && a.length) ? a : defaultAccts(), lots: l };
+    else if (raw && Array.isArray(raw.accounts)) { a = raw.accounts; l = Array.isArray(raw.lots) ? raw.lots : []; pr = Array.isArray(raw.products) ? raw.products : []; }
+    return { accounts: (a && a.length) ? a : defaultAccts(), lots: l, products: pr };
   }
   function dbError() {
     S.notice = 'บันทึกไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง';
@@ -665,7 +707,7 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
   }
   function persistSettings() {
     if (!sb || !user) return;
-    var uidNow = user.id, pack = { v: 2, accounts: S.accounts, lots: S.lots };
+    var uidNow = user.id, pack = { v: 2, accounts: S.accounts, lots: S.lots, products: S.products };
     queue = queue.then(function () {
       return sb.from('settings').upsert({ user_id: uidNow, accounts: pack }).then(function (r) { if (r.error) throw r.error; });
     }).catch(dbError);
@@ -687,7 +729,7 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
       if (Array.isArray(row.entries) && row.entries.length) days[row.day] = { entries: row.entries };
     });
     var st = unpackSettings(r[1].data ? r[1].data.accounts : null);
-    S.days = days; S.accounts = st.accounts; S.lots = st.lots;
+    S.days = days; S.accounts = st.accounts; S.lots = st.lots; S.products = st.products;
     S.mode = 'db';
     render();
   }
@@ -725,7 +767,7 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
       authMsg('');
       loadData();
     } else {
-      S.days = {}; S.accounts = defaultAccts(); S.lots = []; S.notice = ''; S.manage = false; S.lotSel = '';
+      S.days = {}; S.accounts = defaultAccts(); S.lots = []; S.products = []; S.notice = ''; S.manage = false; S.lotSel = '';
       render();
     }
   }
@@ -831,7 +873,8 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
     S.lots.forEach(function (l) {
       var o = { stock: 0, other: 0, cost: 0, rev: 0, recv: 0, pend: 0, n: 0, sold: 0, packs: 0, items: {}, list: [] };
       lotItems(l).forEach(function (it) {
-        var x = { id: it.id, name: it.name || l.name, unit: it.unit || 'ชิ้น', qty: Math.max(0, parseInt(it.qty, 10) || 0), cost: parseFloat(it.cost) > 0 ? parseFloat(it.cost) : 0, sold: 0, rev: 0, lastPer: 0, lastT: -1 };
+        var pr = (it.prod && prodById(it.prod)) || prodByName(it.name);
+        var x = { id: it.id, prod: pr ? pr.id : '', pkey: pr ? pr.id : 'n:' + normName(it.name || l.name), price: pr && pr.price > 0 ? pr.price : 0, name: pr ? pr.name : (it.name || l.name), unit: it.unit || (pr && pr.unit) || 'ชิ้น', qty: Math.max(0, parseInt(it.qty, 10) || 0), cost: parseFloat(it.cost) > 0 ? parseFloat(it.cost) : 0, sold: 0, rev: 0, lastPer: 0, lastT: -1 };
         o.items[x.id] = x; o.list.push(x); o.packs += x.qty;
       });
       m[l.id] = o;
@@ -910,6 +953,7 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
     renderHistory(st);
     renderForm();
     renderLots();
+    renderProducts();
     renderMoney();
     var pn = st.pendN;
     $('fSubmit').disabled = S.mode === 'loading';
@@ -968,10 +1012,110 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
     $('stockLeft').textContent = st.stockLeft ? 'เหลือ ' + st.stockLeft + ' ชิ้น' : 'ยังไม่มีของในสต็อก';
 
     renderLotMini();
+    renderTop();
     renderBreakdown();
     if (S.tab === 'home') renderChart();
   }
 
+  /* Products roll up every lot item with the same product across lots. */
+  function productStats(inRange) {
+    var ls = lotStats(), m = {}, order = [];
+    var get = function (key, name, unit, id, price) {
+      if (!m[key]) { m[key] = { key: key, id: id || '', name: name, unit: unit || 'ชิ้น', price: price || 0, left: 0, stockVal: 0, qty: 0, sold: 0, rev: 0, cogs: 0, lastPer: 0, lastT: -1, costSum: 0, costN: 0, lots: [], sell: null }; order.push(key); }
+      return m[key];
+    };
+    S.products.forEach(function (pr) { get(pr.id, pr.name, pr.unit, pr.id, pr.price); });
+    S.lots.forEach(function (l) {
+      ls[l.id].list.forEach(function (x) {
+        var g = get(x.pkey, x.name, x.unit, x.prod, x.price);
+        g.qty += x.qty; g.costSum += x.costPer * x.qty; g.costN += x.qty;
+        if (!l.closed) { g.left += x.left; g.stockVal += x.left * x.costPer; if (x.left > 0 && !g.sell) g.sell = l.id + '|' + x.id; }
+        g.lots.push({ lot: l, x: x });
+        if (x.lastT > g.lastT) { g.lastT = x.lastT; g.lastPer = x.lastPer; }
+      });
+    });
+    Object.keys(S.days).forEach(function (d) {
+      if (!inRange(d)) return;
+      S.days[d].entries.forEach(function (e) {
+        if (e.type !== 'income' || !e.lot || !ls[e.lot]) return;
+        var x = itemFor(ls[e.lot], e); if (!x) return;
+        var g = m[x.pkey], q = qtyOf(e, ls[e.lot]);
+        g.sold += q; g.rev += e.amount; g.cogs += q * x.costPer;
+      });
+    });
+    return order.map(function (k) { var g = m[k]; g.profit = g.rev - g.cogs; g.avgCost = g.costN ? g.costSum / g.costN : 0; return g; });
+  }
+  function rangeFn(r) {
+    var today = ymd(new Date()), key = monthKey(S.y, S.m);
+    return r === 'today' ? function (d) { return d === today; } : function (d) { return d.indexOf(key) === 0; };
+  }
+  function renderProducts() {
+    $('vProd').setAttribute('aria-pressed', String(S.lotView === 'prod'));
+    $('vLot').setAttribute('aria-pressed', String(S.lotView === 'lot'));
+    $('prodView').hidden = S.lotView !== 'prod';
+    $('lotView').hidden = S.lotView !== 'lot';
+    Array.prototype.forEach.call($('prodRange').children, function (b) { b.setAttribute('aria-pressed', String(b.dataset.r === S.prodRange)); });
+    var d0 = new Date(S.y, S.m, 1);
+    var list = productStats(rangeFn(S.prodRange));
+    var rev = 0, pf = 0, sv = 0;
+    list.forEach(function (g) { rev += g.rev; pf += g.profit; sv += g.stockVal; });
+    $('pSumLbl').textContent = S.prodRange === 'today' ? 'ขายวันนี้' : 'ขายเดือน ' + d0.toLocaleDateString('th-TH', { month: 'short' });
+    $('pSumRev').textContent = baht(rev);
+    var pe = $('pSumProfit'); pe.textContent = signed(Math.round(pf)); pe.className = cls(pf) === 'zero0' ? '' : cls(pf);
+    $('pSumStock').textContent = baht(Math.round(sv));
+    var host = $('prodList'), ae = document.activeElement;
+    if (ae && host.contains(ae) && ae.tagName === 'INPUT') return;
+    var q = normName(S.prodQ);
+    var shown = list.filter(function (g) { return !q || normName(g.name).indexOf(q) >= 0; });
+    shown.sort(function (a, b) { return (b.rev > 0) - (a.rev > 0) || b.profit - a.profit || (b.left > 0) - (a.left > 0) || (a.name < b.name ? -1 : 1); });
+    if (!shown.length) {
+      host.innerHTML = '<div class="empty-card"><p>' + (q ? 'ไม่พบสินค้าที่ค้นหา' : 'ยังไม่มีสินค้า กด "ซื้อของเข้า" ที่หน้าแรก หรือ "เพิ่มสินค้าในรายการ" ด้านล่าง') + '</p></div>';
+      return;
+    }
+    var period = S.prodRange === 'today' ? 'วันนี้' : 'เดือนนี้';
+    host.innerHTML = shown.map(function (g) {
+      var open = S.prodOpen === g.key, price = g.lastPer || g.price;
+      var badge = g.qty === 0 && !g.lots.length ? '' : g.left === 0 ? '<span class="badge-out">หมด</span>' : g.left <= 3 ? '<span class="badge-low">ใกล้หมด</span>' : '';
+      var side = g.sold
+        ? '<b class="' + (cls(g.profit) === 'zero0' ? '' : cls(g.profit)) + '">' + signed(Math.round(g.profit)) + '</b><span class="sub">ขาย ' + g.sold + ' ' + esc(g.unit) + ' · ' + baht(g.rev) + '</span>'
+        : '<span class="sub">' + period + 'ยังไม่ขาย</span>';
+      var html = '<div class="prow"><button type="button" class="prow-btn" data-prod="' + esc(g.key) + '" aria-expanded="' + open + '">' +
+        '<span class="prow-main"><b>' + esc(g.name) + badge + '</b><span class="sub">เหลือ ' + g.left + ' ' + esc(g.unit) + (price ? ' · ขาย ' + baht(Math.round(price * 100) / 100) : '') + (g.avgCost ? ' · ทุน ' + baht(Math.round(g.avgCost * 100) / 100) : '') + '</span></span>' +
+        '<span class="prow-side">' + side + '</span></button>';
+      if (open) {
+        html += '<div class="prow-more">' +
+          (g.lots.length ? '<ul class="items">' + g.lots.map(function (r) {
+            return '<li><span>' + esc(r.lot.name) + (r.lot.closed ? ' (ปิดแล้ว)' : '') + '</span><span class="sub">ขายแล้ว ' + r.x.sold + '/' + r.x.qty + ' ' + esc(r.x.unit) + ' · ทุน ' + baht(Math.round(r.x.costPer * 100) / 100) + '/' + esc(r.x.unit) + '</span></li>';
+          }).join('') + '</ul>' : '<p class="sub">ยังไม่มีของในร้าน ซื้อของเข้า lot แล้วตั้งชื่อเหมือนสินค้านี้</p>') +
+          (g.id ? '<div class="two"><div class="field"><label for="pn-' + esc(g.id) + '">ชื่อสินค้า</label><input class="input" id="pn-' + esc(g.id) + '" type="text" value="' + esc(g.name) + '"></div>' +
+            '<div class="field"><label for="pp-' + esc(g.id) + '">ราคาขายปกติ (ต่อ' + esc(g.unit) + ')</label><input class="input" id="pp-' + esc(g.id) + '" type="number" inputmode="decimal" min="0" step="0.01" value="' + (g.price || '') + '" placeholder="ไม่บังคับ"></div></div>' : '') +
+          '<div class="slab-actions">' + (g.sell ? '<button type="button" class="btn-main sm" data-act2="sellprod" data-id="' + esc(g.sell) + '">ขาย ＋</button>' : '') +
+          (g.id ? '<button type="button" class="btn-quiet" data-psave="' + esc(g.id) + '">บันทึก</button>' : '') +
+          (g.id && !g.lots.length ? '<button type="button" class="btn-quiet danger" data-pdel="' + esc(g.id) + '">ลบสินค้า</button>' : '') + '</div></div>';
+      }
+      return html + '</div>';
+    }).join('');
+  }
+  function renderTop() {
+    var list = productStats(rangeFn('today')).filter(function (g) { return g.sold > 0; }).sort(function (a, b) { return b.profit - a.profit; }).slice(0, 3);
+    var isNow = S.y === now.getFullYear() && S.m === now.getMonth();
+    $('topWidget').hidden = !list.length || !isNow;
+    $('topList').innerHTML = list.map(function (g) {
+      return '<li><span>' + esc(g.name) + ' <span class="sub">× ' + g.sold + '</span></span><b class="' + (cls(g.profit) === 'zero0' ? '' : cls(g.profit)) + '">' + signed(Math.round(g.profit)) + '</b></li>';
+    }).join('');
+  }
+  function openNewProduct() {
+    S.sheet = { kind: 'prod' };
+    $('shTitle').textContent = 'เพิ่มสินค้า';
+    $('shForm').innerHTML =
+      fld('npName', 'ชื่อสินค้า', '<input class="input" id="npName" type="text" autocomplete="off" placeholder="เช่น Pokémon 30th ซอง">') +
+      '<div class="two">' + fld('npUnit', 'หน่วย', '<select class="input" id="npUnit">' + UNITS.map(function (u) { return '<option>' + u + '</option>'; }).join('') + '</select>') +
+      fld('npPrice', 'ราคาขายปกติ (ไม่บังคับ)', '<input class="input" id="npPrice" type="number" inputmode="decimal" min="0" step="0.01" placeholder="เช่น 350">') + '</div>' +
+      '<p class="hint">สินค้าจะมีจำนวนในร้านเมื่อซื้อของเข้า lot แล้วใส่ชื่อนี้</p>' +
+      '<button class="btn-main" type="submit">เพิ่มสินค้า</button>';
+    showSheet();
+    setTimeout(function () { $('npName').focus(); }, 50);
+  }
   function renderLotMini() {
     var ls = lotStats();
     var open = S.lots.filter(function (l) { return !l.closed; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; }).slice(0, 3);
@@ -1199,7 +1343,7 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
       var nm = $('fLotName').value.trim();
       if (!nm) { say('ตั้งชื่อ lot ก่อน หรือเลือก "ไม่ระบุ lot"', 'err'); $('fLotName').focus(); return; }
       var lot = { id: 'l' + uid(), name: nm, date: date, closed: false };
-      var pk0 = parseInt($('fPacks').value, 10); if (pk0 > 0) lot.items = [{ id: 'i' + uid(), name: nm, unit: 'ชิ้น', qty: pk0 }];
+      var pk0 = parseInt($('fPacks').value, 10); if (pk0 > 0) lot.items = [{ id: 'i' + uid(), name: nm, unit: 'ชิ้น', qty: pk0, prod: linkProduct(nm, 'ชิ้น') }];
       $('fPacks').value = '';
       S.lots = S.lots.concat([lot]);
       lotId = lot.id; S.lotSel = lot.id; newLot = true;
@@ -1534,7 +1678,7 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
 
   function itemRow(it, i, n) {
     return '<div class="irow" data-i="' + i + '" data-id="' + esc(it.id || '') + '">' +
-      '<input class="input iname" type="text" autocomplete="off" placeholder="ชื่อของ เช่น Pokémon 30th ซอง" value="' + esc(it.name || '') + '" aria-label="ชื่อของรายการที่ ' + (i + 1) + '">' +
+      '<input class="input iname" type="text" list="prodNames" autocomplete="off" placeholder="ชื่อสินค้า เช่น Pokémon 30th ซอง" value="' + esc(it.name || '') + '" aria-label="ชื่อของรายการที่ ' + (i + 1) + '">' +
       '<div class="irow3 cap" aria-hidden="true"><span>จำนวน</span><span>หน่วย</span><span>ทุนรวม (ถ้ารู้)</span></div>' +
       '<div class="irow3"><input class="input iqty" type="number" inputmode="numeric" min="1" placeholder="จำนวน" value="' + (it.qty || '') + '" aria-label="จำนวน">' +
       '<select class="input iunit" aria-label="หน่วย">' + UNITS.map(function (u) { return '<option' + (u === (it.unit || 'ชิ้น') ? ' selected' : '') + '>' + u + '</option>'; }).join('') + '</select>' +
@@ -1546,7 +1690,7 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
       return { id: r.dataset.id || '', name: r.querySelector('.iname').value.trim(), qty: parseInt(r.querySelector('.iqty').value, 10) || 0, unit: r.querySelector('.iunit').value, cost: parseFloat(r.querySelector('.icost').value) || 0 };
     });
   }
-  function drawItems(list) { $('itemsHost').innerHTML = list.map(function (it, i) { return itemRow(it, i, list.length); }).join(''); }
+  function drawItems(list) { $('itemsHost').innerHTML = '<datalist id="prodNames">' + S.products.map(function (x) { return '<option value="' + esc(x.name) + '">'; }).join('') + '</datalist>' + list.map(function (it, i) { return itemRow(it, i, list.length); }).join(''); }
 
   /* Buying stock opens a new lot; the same sheet edits the goods of an existing lot. */
   function openBuy(editId) {
@@ -1604,13 +1748,13 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
     $('sInfo').textContent = x.name + ' · เหลือ ' + x.left + ' ' + x.unit + (x.costPer > 0 ? ' · ทุน' + x.unit + 'ละ ' + baht(Math.round(x.costPer * 100) / 100) : '');
     $('sQtyLbl').textContent = 'ขายกี่' + x.unit;
     $('sPriceLbl').textContent = 'ราคา' + x.unit + 'ละ';
-    $('sPrice').value = x.lastPer ? r2(x.lastPer) : '';
+    $('sPrice').value = x.lastPer ? r2(x.lastPer) : x.price ? x.price : '';
     sh.edited = false;
     if ($('shItem')) Array.prototype.forEach.call($('shItem').children, function (c) { c.setAttribute('aria-pressed', String(c.dataset.it === sh.item)); });
     calcSheet();
   }
   function calcSheet() {
-    var sh = S.sheet; if (!sh) return;
+    var sh = S.sheet; if (!sh || sh.kind === 'prod') return;
     if (sh.kind === 'buy') {
       var paid = sh.edit ? sh.paid : (parseFloat($('bCost').value) || 0);
       var list = readItems().filter(function (x) { return x.qty > 0; });
@@ -1635,6 +1779,16 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
     ev.preventDefault();
     var sh = S.sheet; if (!sh) return;
     var a, date, entry;
+    if (sh.kind === 'prod') {
+      var pn = $('npName').value.trim(), pp = parseFloat($('npPrice').value);
+      if (!pn) { shSay('ใส่ชื่อสินค้า'); $('npName').focus(); return; }
+      if (prodByName(pn)) { shSay('มีสินค้าชื่อนี้อยู่แล้ว'); return; }
+      var np = { id: 'p' + uid(), name: pn, unit: $('npUnit').value };
+      if (pp > 0) np.price = r2(pp);
+      S.products = S.products.concat([np]);
+      persistSettings(); hideSheet(); render(); toast('เพิ่มสินค้าแล้ว');
+      return;
+    }
     if (sh.kind === 'buy') {
       var nm = $('bName').value.trim();
       var items = readItems().filter(function (x) { return x.name || x.qty > 0 || x.cost > 0; });
@@ -1644,6 +1798,7 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
         if (!(items[k].qty > 0)) { shSay('ใส่จำนวนของ "' + (items[k].name || 'รายการที่ ' + (k + 1)) + '"'); return; }
         if (!items[k].name) items[k].name = items.length === 1 ? nm : 'รายการที่ ' + (k + 1);
         if (!items[k].id) items[k].id = 'i' + uid() + k;
+        items[k].prod = linkProduct(items[k].name, items[k].unit);
         if (!(items[k].cost > 0)) delete items[k].cost;
       }
       if (sh.edit) {
@@ -1692,6 +1847,8 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
     else if (b.dataset.act2 === 'edit') openBuy(b.dataset.id);
     else if (b.dataset.act2 === 'sell') openSell(b.dataset.id);
     else if (b.dataset.act2 === 'sell-any') sellAny();
+    else if (b.dataset.act2 === 'newprod') openNewProduct();
+    else if (b.dataset.act2 === 'sellprod') { var sp = b.dataset.id.split('|'); openSell(sp[0]); if (S.sheet && S.sheet.o.items[sp[1]]) { S.sheet.item = sp[1]; applyItem(); } }
   });
   $('shForm').addEventListener('submit', submitSheet);
   $('shForm').addEventListener('input', function (ev) {
@@ -1699,7 +1856,14 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
     if (S.sheet && ev.target.id === 'sPrice') S.sheet.edited = false;
     calcSheet();
   });
-  $('shForm').addEventListener('change', function () { calcSheet(); });
+  $('shForm').addEventListener('change', function (ev) {
+    if (ev.target.classList && ev.target.classList.contains('iname')) {
+      var pr = prodByName(ev.target.value), row = ev.target.closest('.irow');
+      if (pr && pr.unit && row) row.querySelector('.iunit').value = pr.unit;
+    }
+    if (S.sheet && S.sheet.kind === 'prod') return;
+    calcSheet();
+  });
   $('shForm').addEventListener('click', function (ev) {
     var sh = S.sheet; if (!sh) return;
     var b = ev.target.closest('button'); if (!b || b.type === 'submit') return;
@@ -1763,6 +1927,7 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
     var g = ev.target.closest('[data-go]');
     if (!g) return;
     if (g.dataset.money) { S.moneyView = g.dataset.money; renderMoney(); }
+    if (g.dataset.pv) { S.lotView = g.dataset.pv; renderProducts(); }
     setTab(g.dataset.go);
   });
   Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) {
@@ -1828,6 +1993,26 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
     if (el.id === 'eLot') setEntryLot(el.dataset.id, el.dataset.date, el.value);
   });
 
+  $('vProd').addEventListener('click', function () { S.lotView = 'prod'; renderProducts(); });
+  $('vLot').addEventListener('click', function () { S.lotView = 'lot'; renderProducts(); });
+  $('prodRange').addEventListener('click', function (ev) { var b = ev.target.closest('[data-r]'); if (!b) return; S.prodRange = b.dataset.r; renderProducts(); });
+  $('prodQ').addEventListener('input', function () { S.prodQ = this.value; S.prodOpen = null; var h = $('prodList'); h.innerHTML = ''; renderProducts(); });
+  $('prodList').addEventListener('click', function (ev) {
+    var b = ev.target.closest('button'); if (!b) return;
+    if (b.dataset.prod) { S.prodOpen = S.prodOpen === b.dataset.prod ? null : b.dataset.prod; renderProducts(); }
+    else if (b.dataset.psave) {
+      var pr = prodById(b.dataset.psave); if (!pr) return;
+      var nn = $('pn-' + pr.id).value.trim(), np2 = parseFloat($('pp-' + pr.id).value);
+      if (nn && normName(nn) !== normName(pr.name) && prodByName(nn)) { toast('มีสินค้าชื่อนี้อยู่แล้ว'); return; }
+      S.lots.forEach(function (l) { (l.items || []).forEach(function (it) { if (!it.prod && normName(it.name) === normName(pr.name)) it.prod = pr.id; }); });
+      if (nn) pr.name = nn;
+      if (np2 > 0) pr.price = r2(np2); else delete pr.price;
+      persistSettings(); render(); toast('บันทึกสินค้าแล้ว');
+    } else if (b.dataset.pdel) {
+      S.products = S.products.filter(function (x) { return x.id !== b.dataset.pdel; });
+      S.prodOpen = null; persistSettings(); render(); toast('ลบสินค้าแล้ว');
+    }
+  });
   $('lotFilter').addEventListener('click', function (ev) {
     var b = ev.target.closest('[data-f]');
     if (!b) return;

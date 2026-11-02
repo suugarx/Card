@@ -503,7 +503,7 @@ a.btn-main { display: inline-grid; place-items: center; text-decoration: none; }
   var shortDate = function (s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }); };
   var uid = function () { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); };
 
-  var S = { days: {}, accounts: defaultAccts(), lots: [], view: 'new', ch: 'tiktok', q: '', cart: [], pay: 'pend', acct: '', loaded: false, armed: null, shipOpen: null };
+  var S = { days: {}, accounts: defaultAccts(), lots: [], products: [], view: 'new', ch: 'tiktok', q: '', cart: [], pay: 'pend', acct: '', loaded: false, armed: null, shipOpen: null };
   var cfg = window.APP_CONFIG || {}, sb = null, user = null, queue = Promise.resolve();
 
   /* ---------- lots & stock (same rules as the ledger) ---------- */
@@ -517,7 +517,9 @@ a.btn-main { display: inline-grid; place-items: center; text-decoration: none; }
     S.lots.forEach(function (l) {
       var o = { lot: l, stockCost: 0, items: {}, list: [] };
       lotItems(l).forEach(function (it) {
-        var x = { id: it.id, lot: l, name: it.name || l.name, unit: it.unit || 'ชิ้น', qty: Math.max(0, parseInt(it.qty, 10) || 0), cost: parseFloat(it.cost) > 0 ? parseFloat(it.cost) : 0, sold: 0, lastPer: 0, lastT: -1 };
+        var nk = String(it.name || '').trim().toLowerCase();
+        var pr = S.products.filter(function (p) { return p.id === it.prod; })[0] || S.products.filter(function (p) { return String(p.name).trim().toLowerCase() === nk; })[0];
+        var x = { id: it.id, lot: l, price: pr && pr.price > 0 ? pr.price : 0, name: pr ? pr.name : (it.name || l.name), unit: it.unit || 'ชิ้น', qty: Math.max(0, parseInt(it.qty, 10) || 0), cost: parseFloat(it.cost) > 0 ? parseFloat(it.cost) : 0, sold: 0, lastPer: 0, lastT: -1 };
         o.items[x.id] = x; o.list.push(x);
       });
       m[l.id] = o;
@@ -589,7 +591,7 @@ a.btn-main { display: inline-grid; place-items: center; text-decoration: none; }
     var days = {};
     (r[0].data || []).forEach(function (row) { if (Array.isArray(row.entries) && row.entries.length) days[row.day] = { entries: row.entries }; });
     var raw = r[1].data ? r[1].data.accounts : null, a = null, l = [];
-    if (Array.isArray(raw)) a = raw; else if (raw && Array.isArray(raw.accounts)) { a = raw.accounts; l = Array.isArray(raw.lots) ? raw.lots : []; }
+    if (Array.isArray(raw)) a = raw; else if (raw && Array.isArray(raw.accounts)) { a = raw.accounts; l = Array.isArray(raw.lots) ? raw.lots : []; S.products = Array.isArray(raw.products) ? raw.products : []; }
     S.days = days; S.accounts = (a && a.length) ? a : defaultAccts(); S.lots = l; S.loaded = true;
     if (!S.accounts.some(function (x) { return x.id === S.acct; })) S.acct = firstAcct('bank');
     notice('');
@@ -621,7 +623,7 @@ a.btn-main { display: inline-grid; place-items: center; text-decoration: none; }
       var out = x.left - (inCart ? inCart.qty : 0) <= 0;
       return '<button type="button" class="prod' + (out ? ' out' : '') + '" data-add="' + esc(x.lot.id) + '|' + esc(x.id) + '"' + (x.left <= 0 ? ' disabled' : '') + '>' +
         '<span class="prod-main"><b>' + esc(x.name) + '</b><span class="sub">' + esc(x.lot.name) + ' · เหลือ ' + x.left + ' ' + esc(x.unit) + '</span></span>' +
-        '<span class="prod-side">' + (x.lastPer ? '<b>' + baht(Math.round(x.lastPer * 100) / 100) + '</b>' : '<span class="sub">ตั้งราคาตอนจ่าย</span>') +
+        '<span class="prod-side">' + ((x.lastPer || x.price) ? '<b>' + baht(Math.round((x.lastPer || x.price) * 100) / 100) + '</b>' : '<span class="sub">ตั้งราคาตอนจ่าย</span>') +
         (inCart ? '<span class="incart">ในตะกร้า ' + inCart.qty + '</span>' : '<span class="plus" aria-hidden="true">＋</span>') + '</span></button>';
     }).join('');
   }
@@ -677,7 +679,7 @@ a.btn-main { display: inline-grid; place-items: center; text-decoration: none; }
     var m = stock(), x = findItem(m, lotId, itemId); if (!x) return;
     var c = S.cart.filter(function (k) { return k.lot === lotId && k.item === itemId; })[0];
     if (c) { if (c.qty < x.left) c.qty++; else { toast('ของหมดแล้ว เหลือ ' + x.left + ' ' + x.unit); return; } }
-    else S.cart.push({ lot: lotId, item: itemId, qty: 1, price: x.lastPer ? r2(x.lastPer) : 0 });
+    else S.cart.push({ lot: lotId, item: itemId, qty: 1, price: x.lastPer ? r2(x.lastPer) : x.price || 0 });
     renderNew(); renderCartBar();
   }
   function openCheckout() {
