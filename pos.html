@@ -545,6 +545,11 @@ body { font-size: 15px; }
 @media (min-width: 960px) {
   body.pos-page { padding-left: 0; }
 }
+
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0B0F14; --surface: #19212C; --soft: #222C3A; --line: #364153; --muted: #A7B0BF; }
+  .prod, .cline, .ocard, .cgroup, .hero, .plate { border-color: #3A4658; }
+}
 </style>
 </head>
 <body class="pos-page">
