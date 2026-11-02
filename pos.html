@@ -392,6 +392,16 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
 .tag.ok { background: var(--good-bg); color: var(--good); }
 a.btn-main { display: inline-grid; place-items: center; text-decoration: none; }
 
+.bar-actions { display: flex; gap: 6px; align-items: center; }
+.cgroup { display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.cgroup .ohead b { font-family: var(--font-display); }
+.cgroup ul { display: flex; flex-direction: column; gap: 6px; }
+.cgroup li { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; border-top: 1px dashed var(--line); padding-top: 6px; }
+.cgroup li:first-child { border-top: 0; padding-top: 0; }
+.promo-ok { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 10px; border-radius: 999px; background: var(--good-bg); color: var(--good); }
+.promo-wait { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 10px; border-radius: 999px; background: var(--warn-bg); color: var(--warn); }
+.sec-title { font: 700 17px var(--font-display); margin-top: 6px; }
+
 /* ===== Theme: deep navy, one tone =====
    Navy carries every action and active state; green/red appear only for profit and loss. */
 :root {
@@ -508,7 +518,7 @@ body { font-size: 15.5px; }
   <div id="app" hidden>
     <header class="bar">
       <h1>ออเดอร์</h1>
-      <a class="pill-btn back" href="index.html">‹ หน้าบัญชี</a>
+      <div class="bar-actions"><button type="button" class="pill-btn" id="promoBtn">โปรส่ง</button><a class="pill-btn back" href="index.html">‹ หน้าบัญชี</a></div>
     </header>
     <div id="notice" class="notice" role="status" hidden></div>
 
@@ -535,6 +545,16 @@ body { font-size: 15.5px; }
     <section class="panel pos-panel" id="v-ship" hidden>
       <p class="sub">ออเดอร์ที่ยังไม่ได้ส่ง กด "ส่งแล้ว" เมื่อแพ็คและส่งของเรียบร้อย ใส่เลขพัสดุไว้ได้</p>
       <div id="shipList" class="olist"></div>
+    </section>
+
+    <!-- shipping promo settings -->
+    <section class="panel pos-panel" id="v-promo" hidden>
+      <div class="sec-head"><h2>โปรค่าส่ง</h2><button type="button" class="link" data-view="new">‹ กลับ</button></div>
+      <div class="field"><label for="pFee">ค่าส่งปกติที่เก็บลูกค้า (บาท)</label><input class="input" id="pFee" type="number" inputmode="decimal" min="0" step="1" placeholder="เช่น 50"></div>
+      <div class="fgroup"><p class="lbl">โปรส่งฟรีที่ใช้ตอนนี้</p><div class="chips" id="pRule"></div></div>
+      <div class="field"><label for="pCustom">หรือกำหนดเอง: ครบกี่ออเดอร์ส่งฟรี</label><input class="input" id="pCustom" type="number" inputmode="numeric" min="2" placeholder="เช่น 3"></div>
+      <p class="hint">นับเฉพาะออเดอร์ของลูกค้าคนเดียวกันที่ยังไม่ได้ส่ง (รวมที่ฝากรวมส่งไว้) ใส่ชื่อลูกค้าทุกครั้งเพื่อให้นับได้</p>
+      <button type="button" class="btn-main" id="pSave">บันทึกโปร</button>
     </section>
 
     <!-- today -->
@@ -565,6 +585,8 @@ body { font-size: 15.5px; }
       <div class="field"><label for="coTotal">ยอดรวม (แก้ได้ถ้าลดราคา)</label><input class="input" id="coTotal" type="number" inputmode="decimal" min="0" step="0.01"></div>
       <div class="field"><label for="coCust">ชื่อลูกค้า (ถ้ามี)</label><input class="input" id="coCust" type="text" autocomplete="off" placeholder="เช่น @ชื่อในแอป"></div>
     </div>
+    <div class="fgroup"><p class="lbl">การจัดส่ง</p><div class="chips" id="shipChips"></div><p class="hint" id="shipHint"></p></div>
+    <div class="field" id="shipFeeWrap"><label for="coShip">ค่าส่งที่เก็บลูกค้า</label><input class="input" id="coShip" type="number" inputmode="decimal" min="0" step="1"></div>
     <p class="calc" id="coCalc"></p>
     <div class="fgroup"><p class="lbl">การจ่ายเงิน</p><div class="chips" id="payChips"></div></div>
     <div class="fgroup" id="acctWrap"><p class="lbl">เงินเข้าบัญชีไหน</p><div class="chips" id="acctChips"></div></div>
@@ -600,7 +622,7 @@ body { font-size: 15.5px; }
   var shortDate = function (s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }); };
   var uid = function () { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); };
 
-  var S = { days: {}, accounts: defaultAccts(), lots: [], products: [], view: 'new', ch: 'tiktok', q: '', cart: [], pay: 'pend', acct: '', loaded: false, armed: null, shipOpen: null };
+  var S = { days: {}, accounts: defaultAccts(), lots: [], products: [], promo: { fee: 0, freeAt: 0 }, ship: 'charge', view: 'new', ch: 'tiktok', q: '', cart: [], pay: 'pend', acct: '', loaded: false, armed: null, shipOpen: null };
   var cfg = window.APP_CONFIG || {}, sb = null, user = null, queue = Promise.resolve();
 
   /* ---------- lots & stock (same rules as the ledger) ---------- */
@@ -671,8 +693,10 @@ body { font-size: 15.5px; }
     Object.keys(S.days).forEach(function (d) {
       S.days[d].entries.forEach(function (e) {
         if (!e.ord) return;
-        var o = map[e.ord] || (map[e.ord] = { id: e.ord, no: e.ordNo, day: d, ch: e.ch, cust: e.cust || '', status: e.ost || 'pack', trk: e.trk || '', pending: false, total: 0, lines: [], t: e.t || 0, note: '' });
-        o.total += e.amount; o.lines.push(e);
+        var o = map[e.ord] || (map[e.ord] = { id: e.ord, no: e.ordNo, day: d, ch: e.ch, cust: e.cust || '', status: e.ost || 'pack', trk: e.trk || '', pending: false, total: 0, lines: [], t: e.t || 0, note: '', shipFee: 0, freeShip: false });
+        o.total += e.amount;
+        if (e.shipFee) o.shipFee += e.amount; else o.lines.push(e);
+        if (e.freeShip) o.freeShip = true;
         if (e.pending) o.pending = true;
         if (e.ordNote) o.note = e.ordNote;
       });
@@ -706,7 +730,7 @@ body { font-size: 15.5px; }
     var days = {};
     (r[0].data || []).forEach(function (row) { if (Array.isArray(row.entries) && row.entries.length) days[row.day] = { entries: row.entries }; });
     var raw = r[1].data ? r[1].data.accounts : null, a = null, l = [];
-    if (Array.isArray(raw)) a = raw; else if (raw && Array.isArray(raw.accounts)) { a = raw.accounts; l = Array.isArray(raw.lots) ? raw.lots : []; S.products = Array.isArray(raw.products) ? raw.products : []; }
+    if (Array.isArray(raw)) a = raw; else if (raw && Array.isArray(raw.accounts)) { a = raw.accounts; l = Array.isArray(raw.lots) ? raw.lots : []; S.products = Array.isArray(raw.products) ? raw.products : []; if (raw.promo) S.promo = raw.promo; }
     S.days = days; S.accounts = (a && a.length) ? a : defaultAccts(); S.lots = l; S.loaded = true;
     if (!S.accounts.some(function (x) { return x.id === S.acct; })) S.acct = firstAcct('bank');
     notice('');
@@ -717,9 +741,11 @@ body { font-size: 15.5px; }
   /* ---------- render ---------- */
   function render() {
     Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.view === S.view)); });
-    ['new', 'ship', 'today'].forEach(function (v) { $('v-' + v).hidden = v !== S.view; });
-    var os = orders(), ship = os.filter(function (o) { return o.status === 'pack'; });
-    $('shipCnt').textContent = ship.length ? ship.length : '';
+    ['new', 'ship', 'today', 'promo'].forEach(function (v) { $('v-' + v).hidden = v !== S.view; });
+    if (S.view === 'promo') renderPromo();
+    var os = orders(), ship = os.filter(function (o) { return o.status === 'pack' || o.status === 'hold'; });
+    var nPack = ship.filter(function (o) { return o.status === 'pack'; }).length;
+    $('shipCnt').textContent = nPack ? nPack : '';
     renderNew(); renderShip(ship); renderToday(os); renderCartBar();
   }
   function renderNew() {
@@ -753,11 +779,11 @@ body { font-size: 15.5px; }
     var ch = CH.filter(function (c) { return c.id === o.ch; })[0];
     var m = stock();
     var lines = o.lines.map(function (e) { var x = findItem(m, e.lot || '_direct', e.lot ? e.item : e.prod); return esc(x ? x.name : 'สินค้า') + ' × ' + (e.qty || 1); }).join(', ');
-    var st = o.status === 'sent' ? '<span class="tag ok">ส่งแล้ว</span>' : '<span class="tag wait">ต้องส่ง</span>';
+    var st = o.status === 'sent' ? '<span class="tag ok">ส่งแล้ว</span>' : o.status === 'hold' ? '<span class="tag wait">ฝากรวมส่ง</span>' : '<span class="tag wait">ต้องส่ง</span>';
     var html = '<article class="ocard"><header class="ohead"><b>#' + esc(o.no || '') + (o.cust ? ' · ' + esc(o.cust) : '') + '</b>' + st + '</header>' +
       '<p class="sub">' + esc(shortDate(o.day)) + ' · ' + esc(ch ? ch.name : 'อื่นๆ') + (o.pending ? ' · รอเงินเข้า' : ' · จ่ายแล้ว') + '</p>' +
       '<p>' + lines + '</p>' + (o.note ? '<p class="sub">โน้ต: ' + esc(o.note) + '</p>' : '') + (o.trk ? '<p class="sub">เลขพัสดุ: ' + esc(o.trk) + '</p>' : '') +
-      '<p class="ototal">' + baht(o.total) + '</p>';
+      '<p class="ototal">' + baht(o.total) + (o.shipFee ? ' <span class="sub">(รวมค่าส่ง ' + baht(o.shipFee) + ')</span>' : o.freeShip ? ' <span class="sub">(ส่งฟรี)</span>' : '') + '</p>';
     if (withActions) {
       var armed = S.armed === o.id;
       if (S.shipOpen === o.id) {
@@ -770,16 +796,81 @@ body { font-size: 15.5px; }
     }
     return html + '</article>';
   }
+  var custKey = function (c) { return String(c || '').trim().toLowerCase().replace(/\s+/g, ' '); };
+  function openOrdersOf(cust) {
+    var k = custKey(cust); if (!k) return [];
+    return orders().filter(function (o) { return (o.status === 'pack' || o.status === 'hold') && custKey(o.cust) === k; });
+  }
+  function itemsText(o) {
+    var m = stock();
+    return o.lines.map(function (e) { var x = findItem(m, e.lot || '_direct', e.lot ? e.item : e.prod); return esc(x ? x.name : 'สินค้า') + ' × ' + (e.qty || 1); }).join(', ');
+  }
+  function groupCard(g, hold) {
+    var key = g.key, n = g.orders.length, total = 0;
+    g.orders.forEach(function (o) { total += o.total; });
+    var fa = S.promo.freeAt || 0, badge = '';
+    if (fa > 1 && g.cust) badge = n >= fa ? '<span class="promo-ok">ครบ ' + fa + ' ออเดอร์ ส่งฟรี</span>' : '<span class="promo-wait">อีก ' + (fa - n) + ' ออเดอร์ส่งฟรี</span>';
+    var html = '<article class="cgroup"><header class="ohead"><b>' + esc(g.cust || ('#' + g.orders[0].no)) + '</b><span class="sub">' + n + ' ออเดอร์ · ' + baht(total) + '</span></header>' + badge +
+      '<ul>' + g.orders.map(function (o) {
+        var armed = S.armed === o.id;
+        return '<li><span><b>#' + esc(o.no) + '</b> ' + itemsText(o) + (o.note ? '<br><span class="sub">' + esc(o.note) + '</span>' : '') + '</span>' +
+          '<button type="button" class="link danger" data-cancel="' + esc(o.id) + '">' + (armed ? 'ยืนยันยกเลิก' : 'ยกเลิก') + '</button></li>';
+      }).join('') + '</ul>';
+    if (hold) {
+      html += '<div class="slab-actions"><button type="button" class="btn-main sm" data-release="' + esc(key) + '">พร้อมส่งแล้ว</button></div>';
+    } else if (S.shipOpen === key) {
+      html += '<div class="two"><div class="field"><label for="trk-g">เลขพัสดุ (ถ้ามี)</label><input class="input" id="trk-g" type="text" autocomplete="off" placeholder="เช่น TH0123456789"></div>' +
+        '<div class="field"><label for="cost-g">ค่าส่งที่จ่ายขนส่งจริง (ถ้ามี)</label><input class="input" id="cost-g" type="number" inputmode="decimal" min="0" placeholder="เช่น 45"></div></div>' +
+        '<div class="slab-actions"><button type="button" class="btn-main sm" data-sentg="' + esc(key) + '">ยืนยันส่งแล้ว' + (n > 1 ? ' (รวม ' + n + ' ออเดอร์)' : '') + '</button><button type="button" class="btn-quiet" data-shipcancel="1">ยกเลิก</button></div>';
+    } else {
+      html += '<div class="slab-actions"><button type="button" class="btn-main sm" data-ship="' + esc(key) + '">ส่งแล้ว' + (n > 1 ? ' (รวมส่ง ' + n + ')' : '') + '</button></div>';
+    }
+    return html + '</article>';
+  }
+  function groupsOf(list) {
+    var map = {}, order = [];
+    list.slice().reverse().forEach(function (o) {
+      var k = custKey(o.cust) || ('#' + o.id);
+      if (!map[k]) { map[k] = { key: k, cust: o.cust, orders: [] }; order.push(k); }
+      map[k].orders.push(o);
+    });
+    return order.map(function (k) { return map[k]; });
+  }
   function renderShip(ship) {
     var host = $('shipList'), ae = document.activeElement;
     if (ae && host.contains(ae) && ae.tagName === 'INPUT') return;
-    host.innerHTML = ship.length ? ship.slice().reverse().map(function (o) { return orderCard(o, true); }).join('') : '<div class="empty-card"><p>ไม่มีออเดอร์ที่ต้องส่ง</p></div>';
+    var pack = groupsOf(ship.filter(function (o) { return o.status === 'pack'; })), hold = groupsOf(ship.filter(function (o) { return o.status === 'hold'; }));
+    S.groups = {};
+    pack.concat(hold).forEach(function (g) { S.groups[g.key] = g; });
+    var html = pack.length ? pack.map(function (g) { return groupCard(g, false); }).join('') : '<div class="empty-card"><p>ไม่มีออเดอร์ที่ต้องส่ง</p></div>';
+    if (hold.length) html += '<h3 class="sec-title">ฝากรวมส่ง (ยังไม่ส่ง)</h3>' + hold.map(function (g) { return groupCard(g, true); }).join('');
+    host.innerHTML = html;
+  }
+  function renderPromo() {
+    if (document.activeElement !== $('pFee')) $('pFee').value = S.promo.fee || '';
+    var fa = S.promo.freeAt || 0;
+    $('pRule').innerHTML = [[0, 'ไม่มีโปร'], [2, 'ครบ 2 ออเดอร์ส่งฟรี'], [4, 'ครบ 4 ออเดอร์ส่งฟรี']].map(function (r) {
+      return '<button type="button" class="chip" data-rule="' + r[0] + '" aria-pressed="' + (fa === r[0]) + '">' + r[1] + '</button>';
+    }).join('');
+    $('pCustom').value = fa && fa !== 2 && fa !== 4 ? fa : '';
+  }
+  async function savePromo() {
+    var r = await sb.from('settings').select('accounts').maybeSingle();
+    if (r.error) { toast('บันทึกไม่สำเร็จ ลองใหม่'); return; }
+    var raw = r.data ? r.data.accounts : null, pack;
+    if (raw && !Array.isArray(raw) && Array.isArray(raw.accounts)) pack = raw;
+    else pack = { v: 2, accounts: Array.isArray(raw) && raw.length ? raw : S.accounts, lots: S.lots, products: S.products };
+    pack.promo = S.promo;
+    var w = await sb.from('settings').upsert({ user_id: user.id, accounts: pack });
+    if (w.error) { toast('บันทึกไม่สำเร็จ ลองใหม่'); return; }
+    toast('บันทึกโปรแล้ว'); S.view = 'new'; render();
   }
   function renderToday(os) {
     var today = ymd(new Date()), m = stock(), sales = 0, qty = 0, profit = 0;
     var list = os.filter(function (o) { return o.day === today; });
     list.forEach(function (o) {
       sales += o.total;
+      profit += o.shipFee;
       o.lines.forEach(function (e) { var x = findItem(m, e.lot || '_direct', e.lot ? e.item : e.prod), q = e.qty || 1; qty += q; profit += e.amount - (x ? x.costPer * q : 0); });
     });
     $('tSales').textContent = baht(sales);
@@ -797,10 +888,36 @@ body { font-size: 15.5px; }
     else S.cart.push({ lot: lotId, item: itemId, qty: 1, price: x.lastPer ? r2(x.lastPer) : x.price || 0 });
     renderNew(); renderCartBar();
   }
+  function shipAdvice() {
+    var cust = $('coCust').value.trim(), fa = S.promo.freeAt || 0, mine = openOrdersOf(cust);
+    var n = mine.length + 1, held = mine.filter(function (o) { return o.status === 'hold'; }).length;
+    return { cust: cust, fa: fa, n: n, held: held, reached: fa > 1 && cust && n >= fa };
+  }
+  function autoShip() {
+    var ad = shipAdvice();
+    S.ship = ad.reached ? 'free' : (ad.fa > 1 && ad.cust && ad.held ? 'hold' : 'charge');
+  }
+  function drawShip() {
+    var ad = shipAdvice();
+    $('shipChips').innerHTML = [['charge', 'เก็บค่าส่ง'], ['free', 'ส่งฟรี'], ['hold', 'ฝากรวมส่ง (ยังไม่ส่ง)']].map(function (x) {
+      return '<button type="button" class="chip" data-ship-mode="' + x[0] + '" aria-pressed="' + (S.ship === x[0]) + '">' + x[1] + '</button>';
+    }).join('');
+    var hint = '';
+    if (ad.fa > 1) {
+      if (!ad.cust) hint = 'ใส่ชื่อลูกค้าเพื่อนับโปรครบ ' + ad.fa + ' ออเดอร์ส่งฟรี';
+      else if (ad.reached) hint = 'ลูกค้านี้มี ' + ad.n + ' ออเดอร์ (รวมออเดอร์นี้) ครบโปร ส่งฟรี' + (ad.held ? ' ออเดอร์ที่ฝากไว้จะย้ายไป "ต้องส่ง" ด้วย' : '');
+      else hint = 'ลูกค้านี้มี ' + ad.n + ' ออเดอร์ อีก ' + (ad.fa - ad.n) + ' ออเดอร์จะส่งฟรี เลือก "ฝากรวมส่ง" ถ้าลูกค้าจะสั่งเพิ่ม';
+    } else if (ad.cust && ad.held) hint = 'ลูกค้านี้มีออเดอร์ฝากรวมส่งอยู่ ' + ad.held + ' ออเดอร์';
+    $('shipHint').textContent = hint;
+    $('shipFeeWrap').hidden = S.ship !== 'charge';
+    if (S.ship === 'charge' && $('coShip').value === '' && S.promo.fee) $('coShip').value = S.promo.fee;
+  }
   function openCheckout() {
     S.pay = (CH.filter(function (c) { return c.id === S.ch; })[0] || CH[0]).pay;
+    $('coShip').value = S.promo.fee || '';
     S.totalEdited = false;
     $('coCust').value = ''; $('coNote').value = ''; $('coMsg').textContent = '';
+    S.ship = 'charge';
     drawCheckout();
     $('sheet').hidden = false; document.body.style.overflow = 'hidden';
   }
@@ -819,6 +936,7 @@ body { font-size: 15.5px; }
       return '<button type="button" class="chip" data-pay="' + p[0] + '" aria-pressed="' + (S.pay === p[0]) + '">' + p[1] + '</button>';
     }).join('');
     if (!S.acct) S.acct = firstAcct('bank');
+    drawShip();
     $('acctChips').innerHTML = S.accounts.map(function (a) { return '<button type="button" class="chip" data-acct="' + esc(a.id) + '" aria-pressed="' + (a.id === S.acct) + '">' + esc(a.name) + '</button>'; }).join('');
     calcCheckout();
   }
@@ -829,6 +947,8 @@ body { font-size: 15.5px; }
     S.cart.forEach(function (c) { var x = findItem(m, c.lot, c.item); if (x) { cost += x.costPer * c.qty; if (c.qty > x.left) over = true; } });
     var out = tot > 0 ? 'กำไรออเดอร์นี้ <b class="' + (tot - cost >= 0 ? 'pos' : 'neg') + '">' + signed(Math.round((tot - cost) * 100) / 100) + '</b>' : '';
     if (S.totalEdited && Math.abs(tot - sum) > 0.004 && sum > 0) out += (out ? ' · ' : '') + (tot < sum ? 'ลด ' + baht(sum - tot) : 'เพิ่ม ' + baht(tot - sum));
+    var fee = S.ship === 'charge' ? (parseFloat($('coShip').value) || 0) : 0;
+    if (fee > 0 && tot > 0) out += (out ? '<br>' : '') + 'เก็บลูกค้าทั้งหมด <b>' + baht(tot + fee) + '</b> (รวมค่าส่ง ' + baht(fee) + ')';
     if (over) out += (out ? '<br>' : '') + '<span class="neg">มีสินค้าเกินจำนวนที่เหลือ</span>';
     $('coCalc').innerHTML = out;
     $('acctWrap').querySelector('.lbl').textContent = S.pay === 'pend' ? 'เงินจะเข้าบัญชีไหน' : 'เงินเข้าบัญชีไหน';
@@ -854,16 +974,26 @@ body { font-size: 15.5px; }
     var date = ymd(new Date()), seq = nextOrderNo(date), ordId = 'o' + uid();
     var no = date.slice(5).replace('-', '') + '-' + pad(seq);
     var sum = cartSum(), cust = $('coCust').value.trim(), note = $('coNote').value.trim(), left = tot;
+    if ((S.ship === 'hold' || (S.ship === 'free' && S.promo.freeAt > 1)) && !cust) { say('ใส่ชื่อลูกค้าก่อน เพื่อรวมออเดอร์และนับโปร'); $('coCust').focus(); return; }
+    var ost = S.ship === 'hold' ? 'hold' : 'pack', fee = S.ship === 'charge' ? r2(parseFloat($('coShip').value) || 0) : 0;
     var entries = S.cart.map(function (c, i) {
       var amt = i === S.cart.length - 1 ? r2(left) : r2(sum > 0 ? tot * (c.qty * c.price) / sum : tot / S.cart.length);
       left -= amt;
       var e = { id: uid() + i, type: 'income', amount: amt, cat: ch.cat, method: a.kind === 'bank' ? 'transfer' : 'cash', acct: a.id, ref: '', note: 'ออเดอร์ #' + no + (cust ? ' ' + cust : ''), t: Date.now(),
-        lot: c.lot === '_direct' ? undefined : c.lot, item: c.lot === '_direct' ? undefined : c.item, prod: c.lot === '_direct' ? c.item : undefined, qty: c.qty, unitPrice: c.price || undefined, ord: ordId, ordNo: no, ordSeq: seq, ch: ch.id, ost: 'pack' };
+        lot: c.lot === '_direct' ? undefined : c.lot, item: c.lot === '_direct' ? undefined : c.item, prod: c.lot === '_direct' ? c.item : undefined, qty: c.qty, unitPrice: c.price || undefined, ord: ordId, ordNo: no, ordSeq: seq, ch: ch.id, ost: ost };
+      if (S.ship === 'free' && i === 0) e.freeShip = true;
       if (cust) e.cust = cust;
       if (note && i === 0) e.ordNote = note;
       if (S.pay === 'pend') e.pending = true;
       return e;
     });
+    if (fee > 0) {
+      var fe = { id: uid() + 'f', type: 'income', amount: fee, cat: 'รายรับอื่น', method: a.kind === 'bank' ? 'transfer' : 'cash', acct: a.id, ref: '', note: 'ค่าส่ง ออเดอร์ #' + no + (cust ? ' ' + cust : ''), t: Date.now(), ord: ordId, ordNo: no, ordSeq: seq, ch: ch.id, ost: ost, shipFee: true };
+      if (cust) fe.cust = cust;
+      if (S.pay === 'pend') fe.pending = true;
+      entries.push(fe);
+    }
+    if (ost === 'pack' && cust) openOrdersOf(cust).filter(function (o) { return o.status === 'hold'; }).forEach(function (o) { updateOrder(o.id, function (e) { e.ost = 'pack'; return e; }); });
     var day = S.days[date] || { entries: [] };
     S.days[date] = { entries: day.entries.concat(entries) };
     persist(date);
@@ -888,17 +1018,33 @@ body { font-size: 15.5px; }
     else if (b.dataset.add) { var p = b.dataset.add.split('|'); addToCart(p[0], p[1]); }
     else if (b.dataset.ship) { S.shipOpen = b.dataset.ship; render(); var f = $('trk-' + b.dataset.ship); if (f) f.focus(); }
     else if (b.dataset.shipcancel) { S.shipOpen = null; render(); }
-    else if (b.dataset.sent) {
-      var id = b.dataset.sent, trk = ($('trk-' + id) || {}).value || '';
-      updateOrder(id, function (e) { e.ost = 'sent'; if (trk.trim()) e.trk = trk.trim(); return e; });
-      S.shipOpen = null; render(); toast('ส่งของแล้ว');
-    } else if (b.dataset.cancel) {
+    else if (b.dataset.sentg) {
+      var g = S.groups && S.groups[b.dataset.sentg]; if (!g) return;
+      var trk = ($('trk-g') || {}).value || '', sc = parseFloat(($('cost-g') || {}).value) || 0;
+      g.orders.forEach(function (o) { updateOrder(o.id, function (e) { e.ost = 'sent'; if (trk.trim()) e.trk = trk.trim(); return e; }); });
+      if (sc > 0) {
+        var a0 = S.accounts.filter(function (x) { return x.kind === 'cash'; })[0] || S.accounts[0], d0 = ymd(new Date());
+        var ex = { id: uid() + 's', type: 'expense', amount: r2(sc), cat: 'ค่าส่งและแพ็คของ', method: a0.kind === 'bank' ? 'transfer' : 'cash', acct: a0.id, ref: '', note: 'ค่าส่ง ' + (g.cust || '#' + g.orders[0].no) + (g.orders.length > 1 ? ' (รวม ' + g.orders.length + ' ออเดอร์)' : ''), t: Date.now() };
+        var dd = S.days[d0] || { entries: [] }; S.days[d0] = { entries: dd.entries.concat([ex]) }; persist(d0);
+      }
+      S.shipOpen = null; render(); toast(g.orders.length > 1 ? 'ส่งรวม ' + g.orders.length + ' ออเดอร์แล้ว' : 'ส่งของแล้ว');
+    }
+    else if (b.dataset.release) {
+      var hg = S.groups && S.groups[b.dataset.release]; if (!hg) return;
+      hg.orders.forEach(function (o) { updateOrder(o.id, function (e) { e.ost = 'pack'; return e; }); });
+      render(); toast('ย้ายไป "ต้องส่ง" แล้ว');
+    }
+    else if (b.dataset.rule !== undefined && b.closest('#pRule')) { S.promo = { fee: S.promo.fee || 0, freeAt: +b.dataset.rule }; renderPromo(); } else if (b.dataset.cancel) {
       var cid = b.dataset.cancel;
       if (S.armed !== cid) { S.armed = cid; render(); setTimeout(function () { if (S.armed === cid) { S.armed = null; render(); } }, 4000); return; }
       S.armed = null; updateOrder(cid, function () { return null; }); render(); toast('ยกเลิกออเดอร์แล้ว สต็อกคืนให้แล้ว');
     }
   });
   $('q').addEventListener('input', function () { S.q = this.value; renderNew(); });
+  $('promoBtn').addEventListener('click', function () { S.view = 'promo'; render(); });
+  $('pFee').addEventListener('input', function () { S.promo = { fee: parseFloat(this.value) || 0, freeAt: S.promo.freeAt || 0 }; });
+  $('pCustom').addEventListener('input', function () { var v = parseInt(this.value, 10); if (v > 1) { S.promo = { fee: S.promo.fee || 0, freeAt: v }; Array.prototype.forEach.call($('pRule').children, function (c) { c.setAttribute('aria-pressed', String(+c.dataset.rule === v)); }); } });
+  $('pSave').addEventListener('click', savePromo);
   $('openCart').addEventListener('click', openCheckout);
   $('shClose').addEventListener('click', closeCheckout);
   $('sheet').addEventListener('click', function (ev) { if (ev.target === $('sheet')) closeCheckout(); });
@@ -906,6 +1052,8 @@ body { font-size: 15.5px; }
   $('coForm').addEventListener('submit', submitOrder);
   $('coForm').addEventListener('input', function (ev) {
     if (ev.target.id === 'coTotal') { S.totalEdited = $('coTotal').value !== ''; calcCheckout(); return; }
+    if (ev.target.id === 'coCust') { autoShip(); drawShip(); calcCheckout(); return; }
+    if (ev.target.id === 'coShip') { calcCheckout(); return; }
     if (ev.target.classList.contains('cq') || ev.target.classList.contains('cp')) { readCartInputs(); calcCheckout(); renderCartBar(); }
   });
   $('coForm').addEventListener('click', function (ev) {
@@ -914,6 +1062,7 @@ body { font-size: 15.5px; }
     if (b.dataset.rm) { S.cart.splice(+b.dataset.rm, 1); if (!S.cart.length) { closeCheckout(); render(); return; } drawCheckout(); }
     else if (b.dataset.dq) { var li = b.closest('.cline'), c = S.cart[+li.dataset.i]; c.qty = Math.max(1, c.qty + parseInt(b.dataset.dq, 10)); drawCheckout(); }
     else if (b.dataset.pay) { S.pay = b.dataset.pay; drawCheckout(); }
+    else if (b.dataset.shipMode) { S.ship = b.dataset.shipMode; drawCheckout(); }
     else if (b.dataset.acct) { S.acct = b.dataset.acct; drawCheckout(); }
     renderNew(); renderCartBar();
   });
