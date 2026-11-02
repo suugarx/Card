@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>บัญชีร้านการ์ด</title>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#17182E">
+<meta name="theme-color" content="#14295E">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
@@ -377,126 +377,103 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
 .top3 li { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
 .top3 li span:first-child { overflow-wrap: anywhere; }
 
-/* ===== Theme: trading-card binder =====
-   Light binder-page ground, ink type, "energy" yellow for the main actions, violet for links and active states.
-   The one bold element is the hero: a dark card with a holo-foil frame, like a rare card in a sleeve. */
+.warn-num { color: var(--warn); }
+/* ===== Theme: deep navy, one tone =====
+   Navy carries every action and active state; green/red appear only for profit and loss. */
 :root {
-  --bg: #EEF0F6;
+  --bg: #F3F6FB;
   --surface: #FFFFFF;
-  --soft: #E4E7F1;
-  --ink: #17182E;
-  --muted: #5D627A;
-  --line: #DADDEA;
-  --accent: #5A3FF0;
+  --soft: #E6ECF6;
+  --ink: #0F1B33;
+  --muted: #5B6880;
+  --line: #DCE3EF;
+  --accent: #1D3A8A;
   --accent-ink: #FFFFFF;
-  --accent-soft: #ECE8FF;
-  --energy: #FFC93C;
-  --energy-ink: #17182E;
-  --energy-edge: #D9A11A;
-  --good: #0C9461;
-  --good-bg: #DDF5EA;
-  --bad: #DB3B43;
-  --bad-bg: #FDE6E7;
-  --hero: #17182E;
-  --hero-ink: #F4F5FB;
-  --hero-muted: #A3A8C3;
-  --hero-good: #5EE6A8;
-  --hero-bad: #FF9A9F;
-  --holo: conic-gradient(from 210deg, #8EF0FF, #B79CFF, #FF9AD5, #FFE58A, #9DFFC4, #8EF0FF);
+  --accent-soft: #E4EBF9;
+  --good: #0F8A5F;
+  --good-bg: #DDF3E9;
+  --bad: #C8323C;
+  --bad-bg: #FBE4E6;
+  --warn: #8A5A00;
+  --warn-bg: #FBEFD5;
+  --hero: #14295E;
+  --hero-ink: #FFFFFF;
+  --hero-muted: #AFC0E4;
+  --hero-good: #7CE7B6;
+  --hero-bad: #FFA3A9;
   --font-display: "Bai Jamjuree", "IBM Plex Sans Thai", system-ui, sans-serif;
   --font-body: "IBM Plex Sans Thai", system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #101223;
-    --surface: #1A1C33;
-    --soft: #23264A;
-    --ink: #EDEEF8;
-    --muted: #9FA4C2;
-    --line: #2B2E52;
-    --accent: #A897FF;
-    --accent-ink: #101223;
-    --accent-soft: #2A2560;
-    --energy: #FFC93C;
-    --energy-ink: #17182E;
-    --energy-edge: #B8860B;
-    --good: #52DDA0;
-    --good-bg: #123A2C;
-    --bad: #FF8A90;
-    --bad-bg: #3D1C22;
-    --hero: #22244A;
+    --bg: #0A1229;
+    --surface: #111C3B;
+    --soft: #1A2850;
+    --ink: #E8EEFA;
+    --muted: #9DABC8;
+    --line: #22325E;
+    --accent: #8EAEFF;
+    --accent-ink: #0A1229;
+    --accent-soft: #1C2D5E;
+    --good: #5FD9A3;
+    --good-bg: #0F3426;
+    --bad: #FF8E95;
+    --bad-bg: #3A1820;
+    --warn: #F2C063;
+    --warn-bg: #3A2C10;
+    --hero: #1A3373;
   }
 }
-body { font-size: 15.5px; letter-spacing: .005em; }
+body { font-size: 15.5px; }
 .bar h1 { font: 700 26px/1.15 var(--font-display); letter-spacing: -.01em; }
 .sec-head h2 { font: 700 19px/1.3 var(--font-display); }
 
-/* hero: holo-framed card */
-.hero {
-  position: relative; isolation: isolate; overflow: hidden;
-  border-radius: 26px; padding: 22px 20px 18px; gap: 10px;
-  background: var(--hero); border: 3px solid transparent;
-  background-image: linear-gradient(var(--hero), var(--hero)), var(--holo);
-  background-origin: border-box; background-clip: padding-box, border-box;
-  box-shadow: 0 18px 40px rgba(23, 24, 46, .28);
-}
-.hero::before {
-  content: ""; position: absolute; inset: 8px; border-radius: 18px; border: 1px solid rgba(255, 255, 255, .12); pointer-events: none; z-index: -1;
-}
-.hero::after {
-  content: ""; position: absolute; inset: -40% -60%; z-index: -1; pointer-events: none;
-  background: linear-gradient(105deg, transparent 42%, rgba(255, 255, 255, .13) 50%, transparent 58%);
-  transform: translateX(-60%); animation: sheen 1.6s ease-out .3s 1 both;
-}
-@keyframes sheen { to { transform: translateX(60%); } }
+.hero { border-radius: 24px; padding: 22px 20px 18px; gap: 10px; background: var(--hero); box-shadow: 0 14px 34px rgba(20, 41, 94, .25); }
 .hero-label { font: 600 14px var(--font-display); color: var(--hero-muted); }
 .hero-num { font: 700 clamp(2.8rem, 14vw, 4rem)/1 var(--font-display); letter-spacing: -.02em; }
-.hero-stats { border-top-color: rgba(255, 255, 255, .12); }
+.hero-stats { border-top-color: rgba(255, 255, 255, .14); }
 .hero-stats dd { font: 700 18px/1.3 var(--font-display); }
 
-/* primary actions in energy yellow, with a pressed-card edge */
-.btn-main, .act-big.sell, .cartbtn, .tab.add .ico {
-  background: var(--energy); color: var(--energy-ink);
-  box-shadow: inset 0 -3px 0 var(--energy-edge);
-}
-.btn-main { font: 700 16px var(--font-display); border-radius: 16px; }
-.btn-main:active, .act-big.sell:active, .cartbtn:active { box-shadow: inset 0 -1px 0 var(--energy-edge); transform: translateY(1px); }
-.act-big { border-radius: 20px; min-height: 92px; padding: 16px 18px; }
+.btn-main, .act-big.sell, .cartbtn, .tab.add .ico { background: var(--accent); color: var(--accent-ink); }
+.btn-main { font: 700 16px var(--font-display); border-radius: 14px; }
+.btn-main:active, .act-big.sell:active, .cartbtn:active { transform: translateY(1px); }
+.act-big { border-radius: 18px; min-height: 88px; padding: 16px 18px; }
 .act-big b { font: 700 20px/1.2 var(--font-display); }
-.act-big.buy { background: var(--surface); border: 1.5px solid var(--line); color: var(--ink); }
-.cartbtn { box-shadow: inset 0 -3px 0 var(--energy-edge), 0 12px 28px rgba(23, 24, 46, .25); }
+.act-big.buy { background: var(--surface); border: 1.5px solid var(--accent); color: var(--accent); }
+.act-big.buy span { color: var(--muted); }
+.cartbtn { box-shadow: 0 12px 28px rgba(20, 41, 94, .3); }
 .cartbtn b { font-family: var(--font-display); }
 
-/* quieter surfaces: one hairline, no heavy shadows */
-.shortcut, .plate, .prow, .ocard, .prod, .cline, .irow, .psum, details.more { border-radius: 18px; border-color: var(--line); box-shadow: none; }
+.shortcut, .plate, .prow, .ocard, .prod, .cline, .irow, .psum, details.more { border-radius: 16px; border-color: var(--line); box-shadow: none; }
 .shortcut b, .prow-side b, .ototal, .psum dd { font-family: var(--font-display); font-weight: 700; }
-.pos-link { background: var(--surface); border: 1.5px dashed var(--accent); }
+.shortcut small { color: var(--accent); }
+.shortcut.warn { background: var(--warn-bg); }
+.pos-link { background: var(--accent-soft); border: 0; }
 .pos-link b { color: var(--accent); font-family: var(--font-display); }
 .chip { border-radius: 999px; font-weight: 500; }
-.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
-.seg { border-radius: 16px; background: var(--soft); }
-.seg button { border-radius: 12px; font-weight: 600; font-family: var(--font-display); }
-.input { border-radius: 14px; background: var(--surface); }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.seg { border-radius: 14px; background: var(--soft); }
+.seg button { border-radius: 10px; font-weight: 600; font-family: var(--font-display); }
+.seg button[aria-pressed="true"] { color: var(--accent); }
+.input { border-radius: 12px; background: var(--surface); }
 .input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 
-/* slab label keeps the foil, softened */
-.slab { border-radius: 20px; border-width: 1.5px; }
-.slab-label { background: var(--holo); background-size: 200% 200%; }
-.slab-name { font-family: var(--font-display); font-weight: 700; color: #17182E; }
-.slab-date { color: #3B3F5C; }
+.slab { border-radius: 18px; border: 1px solid var(--line); }
+.slab-label { background: var(--accent-soft); border-bottom: 1px solid var(--line); }
+.slab.closed .slab-label { background: var(--soft); }
+.slab-name { font-family: var(--font-display); font-weight: 700; color: var(--ink); }
+.slab-date { color: var(--muted); }
+.fill.in { background: var(--accent); }
 
-/* tab bar: ink capsule, active item lifts out in yellow */
-.tabbar-in { background: var(--hero); border: 0; border-radius: 26px; box-shadow: 0 14px 34px rgba(23, 24, 46, .35); }
-.tab { color: #A3A8C3; font-family: var(--font-display); font-weight: 600; }
-.tab[aria-selected="true"] { color: var(--energy-ink); background: var(--energy); }
-.tab.add, .tab.add[aria-selected="true"] { background: transparent; color: #F4F5FB; }
-.tab.add .ico { color: var(--energy-ink); box-shadow: inset 0 -3px 0 var(--energy-edge), 0 6px 18px rgba(255, 201, 60, .45); }
+.tabbar-in { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; box-shadow: 0 10px 30px rgba(20, 41, 94, .16); }
+.tab { color: var(--muted); font-family: var(--font-display); font-weight: 600; }
+.tab[aria-selected="true"] { color: var(--accent); background: var(--accent-soft); }
+.tab.add, .tab.add[aria-selected="true"] { background: transparent; color: var(--ink); }
+.tab.add .ico { box-shadow: 0 6px 16px rgba(29, 58, 138, .35); }
 
-/* product suggestions in the buy sheet */
 .isugg { display: flex; flex-wrap: wrap; gap: 6px; }
 .isugg:empty { display: none; }
-.isugg button { min-height: 36px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--ink); font-size: 14px; }
-@media (prefers-reduced-motion: reduce) { .hero::after { animation: none; display: none; } }
+.isugg button { min-height: 36px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); font-size: 14px; font-weight: 500; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
@@ -943,21 +920,40 @@ body { font-size: 15.5px; letter-spacing: .005em; }
   function monthStats() {
     var key = monthKey(S.y, S.m), ls = lotStats();
     var inc = 0, exp = 0, cogs = 0, stock = 0, stockIn = 0, n = 0, per = {}, pendM = 0;
+    /* Lots without a goods list: the purchase is not a loss on the day; each sale first pays back the lot's cost,
+       and only the part above it counts as profit. Unrecovered cost of a closed lot is written off on the closing day. */
+    var recov = {}, wholeLeft = {};
+    S.lots.forEach(function (l) { if (!(ls[l.id].packs > 0)) wholeLeft[l.id] = ls[l.id].stock; });
+    Object.keys(S.days).sort().forEach(function (d) {
+      S.days[d].entries.slice().sort(function (a, b) { return (a.t || 0) - (b.t || 0); }).forEach(function (e) {
+        if (e.type !== 'income' || !e.lot || !(e.lot in wholeLeft)) return;
+        var c = Math.min(e.amount, Math.max(0, wholeLeft[e.lot]));
+        recov[e.id] = c; wholeLeft[e.lot] -= c;
+      });
+    });
+    var writeOff = 0;
     Object.keys(S.days).forEach(function (d) {
       if (d.indexOf(key) !== 0) return;
       var di = 0, de = 0;
       S.days[d].entries.forEach(function (e) {
-        var o = e.lot && ls[e.lot], packed = !!(o && o.packs > 0), it = packed ? itemFor(o, e) : null;
+        var o = e.lot && ls[e.lot], packed = !!(o && o.packs > 0), whole = !!(o && !packed), it = packed ? itemFor(o, e) : null;
         if (e.type === 'income') {
-          var c = it ? qtyOf(e, o) * it.costPer : 0;
+          var c = it ? qtyOf(e, o) * it.costPer : whole ? (recov[e.id] || 0) : 0;
           inc += e.amount; di += e.amount; cogs += c; de += c;
           if (e.pending) pendM += e.amount;
-        } else if (packed && STOCK[e.cat]) { stockIn += e.amount; }
+        } else if ((packed || whole) && STOCK[e.cat]) { stockIn += e.amount; }
         else { exp += e.amount; de += e.amount; if (STOCK[e.cat]) stock += e.amount; }
         n++;
       });
+      S.lots.forEach(function (l) {
+        if (l.closed && l.closedAt === d && (l.id in wholeLeft) && wholeLeft[l.id] > 0) { writeOff += wholeLeft[l.id]; de += wholeLeft[l.id]; }
+      });
       per[d] = { inc: di, exp: de, net: di - de };
     });
+    S.lots.forEach(function (l) {
+      if (l.closed && l.closedAt && l.closedAt.indexOf(key) === 0 && !S.days[l.closedAt] && (l.id in wholeLeft) && wholeLeft[l.id] > 0) writeOff += wholeLeft[l.id];
+    });
+    exp += writeOff;
     var cIn = 0, cOut = 0, pend = 0, pendN = 0;
     Object.keys(S.days).forEach(function (d) {
       S.days[d].entries.forEach(function (e) {
@@ -968,7 +964,7 @@ body { font-size: 15.5px; letter-spacing: .005em; }
       });
     });
     var stockVal = 0, stockLeft = 0;
-    S.lots.forEach(function (l) { var o = ls[l.id]; if (!l.closed && o.packs > 0) { stockVal += o.stockVal; stockLeft += o.left; } });
+    S.lots.forEach(function (l) { var o = ls[l.id]; if (!l.closed && o.packs > 0) { stockVal += o.stockVal; stockLeft += o.left; } else if (!l.closed && (l.id in wholeLeft)) stockVal += Math.max(0, wholeLeft[l.id]); });
     return { inc: inc, exp: exp, cogs: cogs, net: inc - cogs - exp, stock: stock, stockIn: stockIn, n: n, per: per, pendM: pendM, cIn: cIn, cOut: cOut, cNet: cIn - cOut, pend: pend, pendN: pendN, stockVal: stockVal, stockLeft: stockLeft, ls: ls };
   }
   var UNITS = ['ชิ้น', 'ซอง', 'กล่อง', 'ใบ', 'แพ็ก', 'อัน', 'ชุด'];
@@ -1105,7 +1101,7 @@ body { font-size: 15.5px; letter-spacing: .005em; }
     $('fIncNote').textContent = st.pendM > 0 ? 'รอเงินเข้า ' + baht(st.pendM) : '';
     $('fExp').textContent = baht(st.exp);
     $('fCogs').textContent = baht(st.cogs);
-    $('fStock').textContent = st.stock > 0 ? 'รวมซื้อของที่ไม่ได้ใส่จำนวนชิ้น ' + baht(st.stock) : '';
+    $('fStock').textContent = st.stock > 0 ? 'ซื้อของที่ไม่ได้ผูก lot ' + baht(st.stock) : '';
     $('heroNote').textContent = st.stockIn > 0 ? 'เดือนนี้ซื้อของเข้าร้าน ' + baht(st.stockIn) + ' ยังเป็นของในร้าน จึงไม่นับเป็นขาดทุน' : '';
     $('heroNote').hidden = !(st.stockIn > 0);
     $('fMargin').textContent = st.inc > 0 ? (Math.round(st.net / st.inc * 1000) / 10) + '%' : '–';
@@ -1245,7 +1241,7 @@ body { font-size: 15.5px; letter-spacing: .005em; }
     $('lotMini').innerHTML = open.map(function (l) {
       var o = ls[l.id], pk = o.packs > 0;
       var pct = pk ? Math.min(100, Math.round(o.sold / o.packs * 100)) : (o.cost > 0 ? Math.min(100, Math.round(o.back * 100)) : 0);
-      return '<div class="lot-mini"><div class="lot-mini-top"><span>' + esc(l.name) + '</span><b class="' + (cls(o.profit) === 'zero0' ? '' : cls(o.profit)) + '">' + signed(o.profit) + '</b></div>' +
+      return '<div class="lot-mini"><div class="lot-mini-top"><span>' + esc(l.name) + '</span>' + (!pk && o.profit < 0 ? '<b class="warn-num">ขาดอีก ' + baht(-o.profit) + '</b>' : '<b class="' + (cls(o.profit) === 'zero0' ? '' : cls(o.profit)) + '">' + signed(o.profit) + '</b>') + '</div>' +
         '<div class="track"><div class="fill in" style="width:' + pct + '%"></div></div>' +
         '<p class="sub">' + (pk ? 'ขายแล้ว ' + o.sold + '/' + o.packs + ' ' + (o.single ? o.single.unit : 'ชิ้น') + ' · ' + (o.gap <= 0 ? 'คืนทุนแล้ว' : o.needN ? 'อีก ~' + o.needN + ' ' + (o.single ? o.single.unit : 'ชิ้น') + 'คืนทุน' : 'ยังไม่คืนทุน') : 'ลงทุน ' + baht(o.cost) + ' คืนทุนแล้ว ' + (o.cost > 0 ? Math.round(o.back * 100) + '%' : '–')) + '</p></div>';
     }).join('');
@@ -1509,12 +1505,14 @@ body { font-size: 15.5px; letter-spacing: .005em; }
       var o = ls[l.id], open = !!S.lotOpen[l.id], pc = cls(o.profit);
       var pct = o.cost > 0 ? Math.min(100, Math.round(o.back * 100)) : 0;
       var html = '<article class="slab' + (l.closed ? ' closed' : '') + '"><header class="slab-label"><span class="slab-name">' + esc(l.name) + (l.s ? '<span class="tag sample">ตัวอย่าง</span>' : '') + '</span><span class="slab-date">เริ่ม ' + esc(shortDate(l.date)) + '</span></header>' +
-        '<div class="slab-body"><div class="slab-profit"><span class="sub">กำไรของ lot นี้</span><b class="' + (pc === 'zero0' ? '' : pc) + '">' + (pc === 'zero0' ? baht(0) : signed(o.profit)) + '</b></div>' +
+        '<div class="slab-body"><div class="slab-profit">' + (!l.closed && o.profit < 0
+          ? '<span class="sub">ยังไม่คืนทุน ขาดอีก</span><b class="warn-num">' + baht(-o.profit) + '</b>'
+          : '<span class="sub">กำไรของ lot นี้</span><b class="' + (pc === 'zero0' ? '' : pc) + '">' + (pc === 'zero0' ? baht(0) : signed(o.profit)) + '</b>') + '</div>' +
         '<div class="track" role="img" aria-label="คืนทุนแล้ว ' + pct + ' เปอร์เซ็นต์"><div class="fill in" style="width:' + pct + '%"></div></div>' +
         '<dl class="slab-stats"><div><dt>ลงทุน</dt><dd>' + baht(o.cost) + '</dd></div>' +
         '<div><dt>ขายได้</dt><dd>' + baht(o.rev) + '</dd>' + (o.pend > 0 ? '<small>รอเงินเข้า ' + baht(o.pend) + '</small>' : '') + '</div>' +
         '<div><dt>คืนทุนแล้ว</dt><dd>' + (o.cost > 0 ? Math.round(o.back * 100) + '%' : '–') + '</dd></div></dl>' +
-        '<div class="slab-actions"><button type="button" class="btn-quiet" data-act="lot-toggle" data-id="' + esc(l.id) + '" aria-expanded="' + open + '">' + (open ? 'ซ่อนรายการ' : 'ดูรายการ ' + o.n) + '</button>' +
+        '<div class="slab-actions">' + (l.closed ? '' : '<button type="button" class="btn-main sm" data-act2="sell" data-id="' + esc(l.id) + '">ขาย ＋</button>') + '<button type="button" class="btn-quiet" data-act="lot-toggle" data-id="' + esc(l.id) + '" aria-expanded="' + open + '">' + (open ? 'ซ่อนรายการ' : 'ดูรายการ ' + o.n) + '</button>' +
         '<button type="button" class="btn-quiet" data-act="' + (l.closed ? 'lot-reopen' : 'lot-close') + '" data-id="' + esc(l.id) + '">' + (l.closed ? 'เปิด lot อีกครั้ง' : 'ปิด lot') + '</button></div>';
       if (open) html += lotDetail(l, o);
       return html + '</div></article>';
@@ -1829,15 +1827,14 @@ body { font-size: 15.5px; letter-spacing: .005em; }
     if (editId && !l) return;
     S.sheet = { kind: 'buy', edit: l ? l.id : '', acct: firstAcct('bank'), paid: l ? lotStats()[l.id].stock : 0 };
     $('shTitle').textContent = l ? 'แก้ไขของใน lot' : 'ซื้อของเข้า (lot ใหม่)';
-    var items = l ? lotItems(l).map(function (x) { return { id: x.id, name: x.name, qty: x.qty, unit: x.unit, cost: x.cost }; }) : [{ unit: 'ซอง' }];
-    if (!items.length) items = [{ unit: 'ชิ้น' }];
+    var items = l ? lotItems(l).map(function (x) { return { id: x.id, name: x.name, qty: x.qty, unit: x.unit, cost: x.cost }; }) : [];
     $('shForm').innerHTML =
       fld('bName', 'ชื่อ lot', '<input class="input" id="bName" type="text" autocomplete="off" placeholder="เช่น ของเข้ารอบ 1 พ.ย." value="' + esc(l ? l.name : '') + '">') +
       (l ? '<p class="sub">ยอดที่จ่ายซื้อของ lot นี้ ' + baht(S.sheet.paid) + ' (แก้ได้ที่แท็บรายการ)</p>'
          : fld('bCost', 'จ่ายไปทั้งหมด (บาท)', '<input class="input" id="bCost" type="number" inputmode="decimal" min="0" step="0.01" placeholder="เช่น 5000">')) +
-      '<div class="fgroup"><p class="lbl">ได้ของอะไรมาบ้าง</p><div class="fgroup" id="itemsHost"></div>' +
-      '<button type="button" class="btn-quiet" id="addItem">＋ เพิ่มของอีกอย่าง</button>' +
-      '<p class="hint">ซื้อมาหลายอย่าง ใส่ทุนของแต่ละอย่างไว้จะคิดกำไรแม่นขึ้น ถ้าไม่ใส่ ระบบจะเฉลี่ยเงินที่เหลือตามจำนวนชิ้น</p></div>' +
+      '<div class="fgroup"><p class="lbl">รายการของใน lot (ไม่ใส่ก็ได้)</p><div class="fgroup" id="itemsHost"></div>' +
+      '<button type="button" class="btn-quiet" id="addItem">＋ ใส่รายการของ</button>' +
+      '<p class="hint">ไม่ใส่ก็บันทึกได้ ระบบจะคิดกำไรของ lot จากยอดขายลบเงินที่จ่าย ถ้าใส่ชื่อและจำนวนของ จะรู้ทุนต่อชิ้นและของเหลือด้วย</p></div>' +
       '<p class="calc" id="bCalc"></p>' +
       (l ? '' : '<div class="fgroup"><p class="lbl">จ่ายเงินจาก</p><div class="chips" id="shAcct">' + acctChipsHtml(S.sheet.acct) + '</div></div>' +
         fld('bDate', 'วันที่ซื้อ', '<input class="input" id="bDate" type="date" value="' + ymd(new Date()) + '">')) +
@@ -1850,7 +1847,22 @@ body { font-size: 15.5px; letter-spacing: .005em; }
     if (S.mode === 'loading') return;
     var l = lotById(id); if (!l) return;
     var o = lotStats()[id];
-    if (!o.list.length) { openBuy(id); return; }
+    if (!o.list.length) {
+      S.sheet = { kind: 'sell', simple: true, lot: id, ch: 'shop' };
+      $('shTitle').textContent = 'ขาย: ' + l.name;
+      $('shForm').innerHTML =
+        fld('sTotal', 'ขายได้ (บาท)', '<input class="input" id="sTotal" type="number" inputmode="decimal" min="0" step="0.01" placeholder="เช่น 1200">') +
+        fld('sNote', 'ขายอะไร (ไม่บังคับ)', '<input class="input" id="sNote" type="text" autocomplete="off" placeholder="เช่น ซอง 3 ซอง">') +
+        '<div class="fgroup"><p class="lbl">ขายทางไหน</p><div class="chips" id="shCh">' +
+          '<button type="button" class="chip" data-ch="shop" aria-pressed="true">หน้าร้าน (เงินสด)</button>' +
+          '<button type="button" class="chip" data-ch="transfer" aria-pressed="false">โอนเข้าบัญชี</button>' +
+          '<button type="button" class="chip" data-ch="tiktok" aria-pressed="false">TikTok (รอเงินเข้า)</button></div></div>' +
+        fld('sDate', 'วันที่ขาย', '<input class="input" id="sDate" type="date" value="' + ymd(new Date()) + '">') +
+        '<button class="btn-main" type="submit">บันทึกการขาย</button>';
+      showSheet();
+      setTimeout(function () { $('sTotal').focus(); }, 50);
+      return;
+    }
     var first = o.list.filter(function (x) { return x.left > 0; })[0] || o.list[0];
     S.sheet = { kind: 'sell', lot: id, ch: 'shop', edited: false, item: first.id, o: o };
     $('shTitle').textContent = 'ขาย: ' + l.name;
@@ -1884,7 +1896,7 @@ body { font-size: 15.5px; letter-spacing: .005em; }
     calcSheet();
   }
   function calcSheet() {
-    var sh = S.sheet; if (!sh || sh.kind === 'prod') return;
+    var sh = S.sheet; if (!sh || sh.kind === 'prod' || sh.simple) return;
     if (sh.kind === 'buy') {
       var paid = sh.edit ? sh.paid : (parseFloat($('bCost').value) || 0);
       var list = readItems().filter(function (x) { return x.qty > 0; });
@@ -1922,8 +1934,8 @@ body { font-size: 15.5px; letter-spacing: .005em; }
     if (sh.kind === 'buy') {
       var nm = $('bName').value.trim();
       var items = readItems().filter(function (x) { return x.name || x.qty > 0 || x.cost > 0; });
+      for (var k0 = 0; k0 < items.length; k0++) if (items[k0].name && !(items[k0].qty > 0)) items[k0].qty = 1;
       if (!nm) { shSay('ตั้งชื่อ lot ก่อน'); $('bName').focus(); return; }
-      if (!items.length) { shSay('ใส่ของที่ได้มาอย่างน้อย 1 อย่าง'); return; }
       for (var k = 0; k < items.length; k++) {
         if (!(items[k].qty > 0)) { shSay('ใส่จำนวนของ "' + (items[k].name || 'รายการที่ ' + (k + 1)) + '"'); return; }
         if (!items[k].name) items[k].name = items.length === 1 ? nm : 'รายการที่ ' + (k + 1);
@@ -1946,6 +1958,15 @@ body { font-size: 15.5px; letter-spacing: .005em; }
       S.lots = S.lots.concat([lot]);
       entry = { id: uid(), type: 'expense', amount: cost, cat: 'ซื้อสต็อกการ์ด', method: a.kind === 'bank' ? 'transfer' : 'cash', acct: a.id, ref: '', note: '', t: Date.now(), lot: lot.id };
       persistSettings();
+    } else if (sh.simple) {
+      var st2 = r2(parseFloat($('sTotal').value));
+      date = $('sDate').value;
+      if (!(st2 > 0)) { shSay('ใส่ยอดที่ขายได้'); $('sTotal').focus(); return; }
+      if (!date) { shSay('เลือกวันที่'); return; }
+      a = acctById(firstAcct(sh.ch === 'shop' ? 'cash' : 'bank'));
+      if (!a) { shSay('ยังไม่มีบัญชี'); return; }
+      entry = { id: uid(), type: 'income', amount: st2, cat: sh.ch === 'tiktok' ? 'ขายผ่าน TikTok Shop' : 'ขายกล่องและซองการ์ด', method: a.kind === 'bank' ? 'transfer' : 'cash', acct: a.id, ref: '', note: $('sNote').value.trim(), t: Date.now(), lot: sh.lot };
+      if (sh.ch === 'tiktok') entry.pending = true;
     } else {
       var q = parseInt($('sQty').value, 10), tot = r2(parseFloat($('sTotal').value));
       date = $('sDate').value;
@@ -1966,7 +1987,7 @@ body { font-size: 15.5px; letter-spacing: .005em; }
     toast(kind === 'buy' ? 'เปิด lot ใหม่แล้ว' : entry.pending ? 'บันทึกแล้ว รอเงินเข้าจาก TikTok' : 'บันทึกการขายแล้ว');
   }
   function sellAny() {
-    var open = S.lots.filter(function (l) { return !l.closed && lotItems(l).length; });
+    var open = S.lots.filter(function (l) { return !l.closed; });
     if (open.length === 1) openSell(open[0].id);
     else { setTab('lot'); if (!open.length) toast('ยังไม่มี lot กด "ซื้อของเข้า" ก่อน'); }
   }
@@ -2164,8 +2185,8 @@ body { font-size: 15.5px; letter-spacing: .005em; }
     if (!b) return;
     var act = b.dataset.act, id = b.dataset.id, l = id ? lotById(id) : null;
     if (act === 'lot-toggle') { S.lotOpen[id] = !S.lotOpen[id]; renderLots(); }
-    else if (act === 'lot-close' && l) { l.closed = true; persistSettings(); if (S.lotSel === id) S.lotSel = ''; render(); }
-    else if (act === 'lot-reopen' && l) { l.closed = false; persistSettings(); render(); }
+    else if (act === 'lot-close' && l) { l.closed = true; l.closedAt = ymd(new Date()); persistSettings(); if (S.lotSel === id) S.lotSel = ''; render(); }
+    else if (act === 'lot-reopen' && l) { l.closed = false; delete l.closedAt; persistSettings(); render(); }
     else if (act === 'lot-rename' && l) {
       var v = $('lotName-' + id).value.trim();
       if (v) { l.name = v; persistSettings(); render(); toast('บันทึกแล้ว'); }

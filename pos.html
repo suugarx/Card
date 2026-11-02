@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>POS ร้านการ์ด</title>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#17182E">
+<meta name="theme-color" content="#14295E">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
@@ -392,126 +392,102 @@ details.more > .sec, details.more > .fgroup, details.more > .field, details.more
 .tag.ok { background: var(--good-bg); color: var(--good); }
 a.btn-main { display: inline-grid; place-items: center; text-decoration: none; }
 
-/* ===== Theme: trading-card binder =====
-   Light binder-page ground, ink type, "energy" yellow for the main actions, violet for links and active states.
-   The one bold element is the hero: a dark card with a holo-foil frame, like a rare card in a sleeve. */
+/* ===== Theme: deep navy, one tone =====
+   Navy carries every action and active state; green/red appear only for profit and loss. */
 :root {
-  --bg: #EEF0F6;
+  --bg: #F3F6FB;
   --surface: #FFFFFF;
-  --soft: #E4E7F1;
-  --ink: #17182E;
-  --muted: #5D627A;
-  --line: #DADDEA;
-  --accent: #5A3FF0;
+  --soft: #E6ECF6;
+  --ink: #0F1B33;
+  --muted: #5B6880;
+  --line: #DCE3EF;
+  --accent: #1D3A8A;
   --accent-ink: #FFFFFF;
-  --accent-soft: #ECE8FF;
-  --energy: #FFC93C;
-  --energy-ink: #17182E;
-  --energy-edge: #D9A11A;
-  --good: #0C9461;
-  --good-bg: #DDF5EA;
-  --bad: #DB3B43;
-  --bad-bg: #FDE6E7;
-  --hero: #17182E;
-  --hero-ink: #F4F5FB;
-  --hero-muted: #A3A8C3;
-  --hero-good: #5EE6A8;
-  --hero-bad: #FF9A9F;
-  --holo: conic-gradient(from 210deg, #8EF0FF, #B79CFF, #FF9AD5, #FFE58A, #9DFFC4, #8EF0FF);
+  --accent-soft: #E4EBF9;
+  --good: #0F8A5F;
+  --good-bg: #DDF3E9;
+  --bad: #C8323C;
+  --bad-bg: #FBE4E6;
+  --warn: #8A5A00;
+  --warn-bg: #FBEFD5;
+  --hero: #14295E;
+  --hero-ink: #FFFFFF;
+  --hero-muted: #AFC0E4;
+  --hero-good: #7CE7B6;
+  --hero-bad: #FFA3A9;
   --font-display: "Bai Jamjuree", "IBM Plex Sans Thai", system-ui, sans-serif;
   --font-body: "IBM Plex Sans Thai", system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #101223;
-    --surface: #1A1C33;
-    --soft: #23264A;
-    --ink: #EDEEF8;
-    --muted: #9FA4C2;
-    --line: #2B2E52;
-    --accent: #A897FF;
-    --accent-ink: #101223;
-    --accent-soft: #2A2560;
-    --energy: #FFC93C;
-    --energy-ink: #17182E;
-    --energy-edge: #B8860B;
-    --good: #52DDA0;
-    --good-bg: #123A2C;
-    --bad: #FF8A90;
-    --bad-bg: #3D1C22;
-    --hero: #22244A;
+    --bg: #0A1229;
+    --surface: #111C3B;
+    --soft: #1A2850;
+    --ink: #E8EEFA;
+    --muted: #9DABC8;
+    --line: #22325E;
+    --accent: #8EAEFF;
+    --accent-ink: #0A1229;
+    --accent-soft: #1C2D5E;
+    --good: #5FD9A3;
+    --good-bg: #0F3426;
+    --bad: #FF8E95;
+    --bad-bg: #3A1820;
+    --warn: #F2C063;
+    --warn-bg: #3A2C10;
+    --hero: #1A3373;
   }
 }
-body { font-size: 15.5px; letter-spacing: .005em; }
+body { font-size: 15.5px; }
 .bar h1 { font: 700 26px/1.15 var(--font-display); letter-spacing: -.01em; }
 .sec-head h2 { font: 700 19px/1.3 var(--font-display); }
 
-/* hero: holo-framed card */
-.hero {
-  position: relative; isolation: isolate; overflow: hidden;
-  border-radius: 26px; padding: 22px 20px 18px; gap: 10px;
-  background: var(--hero); border: 3px solid transparent;
-  background-image: linear-gradient(var(--hero), var(--hero)), var(--holo);
-  background-origin: border-box; background-clip: padding-box, border-box;
-  box-shadow: 0 18px 40px rgba(23, 24, 46, .28);
-}
-.hero::before {
-  content: ""; position: absolute; inset: 8px; border-radius: 18px; border: 1px solid rgba(255, 255, 255, .12); pointer-events: none; z-index: -1;
-}
-.hero::after {
-  content: ""; position: absolute; inset: -40% -60%; z-index: -1; pointer-events: none;
-  background: linear-gradient(105deg, transparent 42%, rgba(255, 255, 255, .13) 50%, transparent 58%);
-  transform: translateX(-60%); animation: sheen 1.6s ease-out .3s 1 both;
-}
-@keyframes sheen { to { transform: translateX(60%); } }
+.hero { border-radius: 24px; padding: 22px 20px 18px; gap: 10px; background: var(--hero); box-shadow: 0 14px 34px rgba(20, 41, 94, .25); }
 .hero-label { font: 600 14px var(--font-display); color: var(--hero-muted); }
 .hero-num { font: 700 clamp(2.8rem, 14vw, 4rem)/1 var(--font-display); letter-spacing: -.02em; }
-.hero-stats { border-top-color: rgba(255, 255, 255, .12); }
+.hero-stats { border-top-color: rgba(255, 255, 255, .14); }
 .hero-stats dd { font: 700 18px/1.3 var(--font-display); }
 
-/* primary actions in energy yellow, with a pressed-card edge */
-.btn-main, .act-big.sell, .cartbtn, .tab.add .ico {
-  background: var(--energy); color: var(--energy-ink);
-  box-shadow: inset 0 -3px 0 var(--energy-edge);
-}
-.btn-main { font: 700 16px var(--font-display); border-radius: 16px; }
-.btn-main:active, .act-big.sell:active, .cartbtn:active { box-shadow: inset 0 -1px 0 var(--energy-edge); transform: translateY(1px); }
-.act-big { border-radius: 20px; min-height: 92px; padding: 16px 18px; }
+.btn-main, .act-big.sell, .cartbtn, .tab.add .ico { background: var(--accent); color: var(--accent-ink); }
+.btn-main { font: 700 16px var(--font-display); border-radius: 14px; }
+.btn-main:active, .act-big.sell:active, .cartbtn:active { transform: translateY(1px); }
+.act-big { border-radius: 18px; min-height: 88px; padding: 16px 18px; }
 .act-big b { font: 700 20px/1.2 var(--font-display); }
-.act-big.buy { background: var(--surface); border: 1.5px solid var(--line); color: var(--ink); }
-.cartbtn { box-shadow: inset 0 -3px 0 var(--energy-edge), 0 12px 28px rgba(23, 24, 46, .25); }
+.act-big.buy { background: var(--surface); border: 1.5px solid var(--accent); color: var(--accent); }
+.act-big.buy span { color: var(--muted); }
+.cartbtn { box-shadow: 0 12px 28px rgba(20, 41, 94, .3); }
 .cartbtn b { font-family: var(--font-display); }
 
-/* quieter surfaces: one hairline, no heavy shadows */
-.shortcut, .plate, .prow, .ocard, .prod, .cline, .irow, .psum, details.more { border-radius: 18px; border-color: var(--line); box-shadow: none; }
+.shortcut, .plate, .prow, .ocard, .prod, .cline, .irow, .psum, details.more { border-radius: 16px; border-color: var(--line); box-shadow: none; }
 .shortcut b, .prow-side b, .ototal, .psum dd { font-family: var(--font-display); font-weight: 700; }
-.pos-link { background: var(--surface); border: 1.5px dashed var(--accent); }
+.shortcut small { color: var(--accent); }
+.shortcut.warn { background: var(--warn-bg); }
+.pos-link { background: var(--accent-soft); border: 0; }
 .pos-link b { color: var(--accent); font-family: var(--font-display); }
 .chip { border-radius: 999px; font-weight: 500; }
-.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
-.seg { border-radius: 16px; background: var(--soft); }
-.seg button { border-radius: 12px; font-weight: 600; font-family: var(--font-display); }
-.input { border-radius: 14px; background: var(--surface); }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.seg { border-radius: 14px; background: var(--soft); }
+.seg button { border-radius: 10px; font-weight: 600; font-family: var(--font-display); }
+.seg button[aria-pressed="true"] { color: var(--accent); }
+.input { border-radius: 12px; background: var(--surface); }
 .input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 
-/* slab label keeps the foil, softened */
-.slab { border-radius: 20px; border-width: 1.5px; }
-.slab-label { background: var(--holo); background-size: 200% 200%; }
-.slab-name { font-family: var(--font-display); font-weight: 700; color: #17182E; }
-.slab-date { color: #3B3F5C; }
+.slab { border-radius: 18px; border: 1px solid var(--line); }
+.slab-label { background: var(--accent-soft); border-bottom: 1px solid var(--line); }
+.slab.closed .slab-label { background: var(--soft); }
+.slab-name { font-family: var(--font-display); font-weight: 700; color: var(--ink); }
+.slab-date { color: var(--muted); }
+.fill.in { background: var(--accent); }
 
-/* tab bar: ink capsule, active item lifts out in yellow */
-.tabbar-in { background: var(--hero); border: 0; border-radius: 26px; box-shadow: 0 14px 34px rgba(23, 24, 46, .35); }
-.tab { color: #A3A8C3; font-family: var(--font-display); font-weight: 600; }
-.tab[aria-selected="true"] { color: var(--energy-ink); background: var(--energy); }
-.tab.add, .tab.add[aria-selected="true"] { background: transparent; color: #F4F5FB; }
-.tab.add .ico { color: var(--energy-ink); box-shadow: inset 0 -3px 0 var(--energy-edge), 0 6px 18px rgba(255, 201, 60, .45); }
+.tabbar-in { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; box-shadow: 0 10px 30px rgba(20, 41, 94, .16); }
+.tab { color: var(--muted); font-family: var(--font-display); font-weight: 600; }
+.tab[aria-selected="true"] { color: var(--accent); background: var(--accent-soft); }
+.tab.add, .tab.add[aria-selected="true"] { background: transparent; color: var(--ink); }
+.tab.add .ico { box-shadow: 0 6px 16px rgba(29, 58, 138, .35); }
 
-/* product suggestions in the buy sheet */
 .isugg { display: flex; flex-wrap: wrap; gap: 6px; }
 .isugg:empty { display: none; }
-.isugg button { min-height: 36px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--ink); font-size: 14px; }
-@media (prefers-reduced-motion: reduce) { .hero::after { animation: none; display: none; } }
+.isugg button { min-height: 36px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); font-size: 14px; font-weight: 500; }
 </style>
 </head>
 <body>
