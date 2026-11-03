@@ -550,11 +550,11 @@ body { font-size: 15px; }
 .gbox { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .gbox-title { font-size: 13px; color: var(--muted); padding: 8px 12px; background: var(--soft); border-bottom: 1px solid var(--line); }
 .gprize { display: flex; flex-direction: column; gap: 0; }
-.gprize li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 12px; border-top: 1px solid var(--line); }
+.gprize li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 10px; padding: 9px 12px; border-top: 1px solid var(--line); min-width: 0; }
 .gprize li:first-child { border-top: 0; }
 .gprize li.isbig { font-weight: 600; }
 .gprize li.done { opacity: .5; }
-.gcount { font-size: 13.5px; color: var(--muted); white-space: nowrap; }
+.gcount { font-size: 13.5px; color: var(--muted); text-align: right; }
 .gcount b { color: var(--ink); }
 .tag.hit { background: var(--accent-soft); color: var(--accent); margin-left: 4px; }
 .gwarn { font-size: 13.5px; color: var(--warn); background: var(--warn-bg); padding: 10px 12px; border-radius: 10px; }
@@ -944,6 +944,7 @@ body { font-size: 15px; }
     });
     var st = unpackSettings(r[1].data ? r[1].data.accounts : null);
     S.days = days; S.accounts = st.accounts; S.lots = st.lots; S.products = st.products; S.gdrafts = st.gdrafts; S.extra = st.extra;
+    S.lots.forEach(function (l) { syncGachaCost(l); });
     S.mode = 'db';
     render();
   }
@@ -1750,6 +1751,20 @@ body { font-size: 15px; }
   }
   function cleanPromos(list) { return list.filter(function (x) { return x.buy > 0 && x.get > 0; }); }
   function drawPromos(list) { $('gPromos').innerHTML = list.map(promoRow).join(''); }
+  /* A gacha box's cost is the value of its prizes: keep the opening expense in step with it. */
+  function syncGachaCost(l) {
+    if (!l.gacha) return false;
+    var total = r2((l.gacha.prizes || []).reduce(function (a, x) { return a + (parseFloat(x.cost) || 0) * (parseInt(x.qty, 10) || 0); }, 0));
+    if (!(total > 0)) return false;
+    var changed = false, found = false;
+    Object.keys(S.days).sort().forEach(function (d) {
+      if (found) return;
+      S.days[d].entries.forEach(function (e) {
+        if (!found && e.lot === l.id && e.type === 'expense' && STOCK[e.cat]) { found = true; if (e.amount !== total) { e.amount = total; persist(d); changed = true; } }
+      });
+    });
+    return changed;
+  }
   function gachaSales(lotId) {
     var out = [];
     Object.keys(S.days).forEach(function (d) { S.days[d].entries.forEach(function (e) { if (e.lot === lotId && e.type === 'income') out.push({ d: d, e: e }); }); });
@@ -2379,17 +2394,8 @@ body { font-size: 15px; }
         if (!(npz[z].cost > 0)) delete npz[z].cost;
       }
       pl.gacha.price = npr; pl.gacha.promos = cleanPromos(readPromos()); pl.gacha.prizes = npz;
-      var newCost = r2(npz.reduce(function (a2, x) { return a2 + (x.cost || 0) * x.qty; }, 0));
-      if (newCost > 0) {
-        var fixed = false;
-        Object.keys(S.days).sort().forEach(function (d) {
-          if (fixed) return;
-          S.days[d].entries.forEach(function (e) {
-            if (!fixed && e.lot === pl.id && e.type === 'expense' && STOCK[e.cat]) { if (e.amount !== newCost) { e.amount = newCost; persist(d); } fixed = true; }
-          });
-        });
-      }
-      persistSettings(); hideSheet(); render(); toast('บันทึกโปรแล้ว');
+      syncGachaCost(pl);
+      persistSettings(); hideSheet(); render(); toast('บันทึกแล้ว ทุนทั้งตู้คำนวณใหม่แล้ว');
       return;
     }
     if (sh.kind === 'gacha') {
