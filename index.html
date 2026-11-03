@@ -575,6 +575,9 @@ body { font-size: 15px; }
 
 .draft { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1.5px dashed var(--accent); border-radius: 12px; background: var(--accent-soft); }
 .draft > div:first-child { display: flex; flex-direction: column; gap: 2px; }
+
+.salepick { display: flex; flex-direction: column; gap: 6px; max-height: 210px; overflow-y: auto; }
+.salepick .chip { text-align: left; border-radius: 10px; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
@@ -1719,7 +1722,7 @@ body { font-size: 15px; }
       '<dl class="slab-stats"><div><dt>ทุนทั้งตู้</dt><dd>' + baht(o.cost) + '</dd></div><div><dt>ขายได้</dt><dd>' + baht(o.rev) + '</dd></div>' +
       '<div><dt>ถ้าขายหมด</dt><dd class="' + (cls(full) === 'zero0' ? '' : cls(full)) + '">' + signed(Math.round(full)) + '</dd></div></dl>' +
       ((g.promos || []).length || o.free ? '<p class="sub">โปร: ' + ((g.promos || []).map(promoText).join(', ') || 'ไม่มี') + (o.free ? ' · แถมไปแล้ว ' + o.free + ' ครั้ง' : '') + '</p>' : '') +
-      '<div class="slab-actions">' + (l.closed ? '' : '<button type="button" class="btn-main sm" data-act2="sell" data-id="' + esc(l.id) + '">ขายสุ่ม ＋</button><button type="button" class="btn-quiet" data-act2="gpromo" data-id="' + esc(l.id) + '">ตั้งค่าตู้</button>') +
+      '<div class="slab-actions">' + (l.closed ? '' : '<button type="button" class="btn-main sm" data-act2="sell" data-id="' + esc(l.id) + '">ขายสุ่ม ＋</button><button type="button" class="btn-quiet" data-act2="gpromo" data-id="' + esc(l.id) + '">ตั้งค่าตู้</button><button type="button" class="btn-quiet" data-act2="gfix" data-id="' + esc(l.id) + '">ลืมตัดรางวัล?</button>') +
       '<button type="button" class="btn-quiet" data-act="lot-toggle" data-id="' + esc(l.id) + '" aria-expanded="' + open + '">' + (open ? 'ซ่อน' : 'ดูรายการ ' + o.n) + '</button>' +
       '<button type="button" class="btn-quiet" data-act="' + (l.closed ? 'lot-reopen' : 'lot-close') + '" data-id="' + esc(l.id) + '">' + (l.closed ? 'เปิดตู้อีกครั้ง' : 'ปิดตู้') + '</button></div>';
     if (open) html += lotDetail(l, o);
@@ -1747,13 +1750,28 @@ body { font-size: 15px; }
   }
   function cleanPromos(list) { return list.filter(function (x) { return x.buy > 0 && x.get > 0; }); }
   function drawPromos(list) { $('gPromos').innerHTML = list.map(promoRow).join(''); }
+  function gachaSales(lotId) {
+    var out = [];
+    Object.keys(S.days).forEach(function (d) { S.days[d].entries.forEach(function (e) { if (e.lot === lotId && e.type === 'income') out.push({ d: d, e: e }); }); });
+    return out.sort(function (a, b) { return (b.e.t || 0) - (a.e.t || 0); });
+  }
+  function openGachaFix(lotId) {
+    var sales = gachaSales(lotId);
+    if (!sales.length) { toast('ตู้นี้ยังไม่มีการขาย กด "ขายสุ่ม" ก่อน'); return; }
+    openGachaHits(sales[0].e.id, sales[0].d);
+  }
   function openGachaHits(entryId, date) {
     var e = (S.days[date] ? S.days[date].entries : []).filter(function (x) { return x.id === entryId; })[0];
     var l = e && lotById(e.lot); if (!l || !l.gacha) return;
     var gi = gachaInfo(l, lotStats()[l.id]), mine = e.hits || {};
     S.sheet = { kind: 'ghits', entry: entryId, date: date, lot: l.id, qty: e.qty || 1, prizes: gi.prizes, mine: mine };
-    $('shTitle').textContent = 'แก้รางวัลที่ออก';
-    $('shForm').innerHTML = '<p class="sub">' + esc(e.note || '') + ' · สุ่ม ' + (e.qty || 1) + ' ครั้ง</p>' +
+    var sales = gachaSales(l.id);
+    $('shTitle').textContent = 'ตัดรางวัลที่ลูกค้าได้ไป';
+    $('shForm').innerHTML =
+      '<div class="fgroup"><p class="lbl">ของการสุ่มรอบไหน</p><div class="salepick">' + sales.slice(0, 20).map(function (x) {
+        return '<button type="button" class="chip" data-pick="' + esc(x.e.id) + '" data-pdate="' + esc(x.d) + '" aria-pressed="' + (x.e.id === entryId) + '">' + esc(shortDate(x.d)) + ' · ' + esc(x.e.note || ('สุ่ม ' + (x.e.qty || 1) + ' ครั้ง')) + ' · ' + baht(x.e.amount) + '</button>';
+      }).join('') + '</div></div>' +
+      '<p class="sub">รอบนี้สุ่ม ' + (e.qty || 1) + ' ครั้ง ใส่รางวัลที่ลูกค้าได้ไปจริง</p>' +
       gi.prizes.map(function (p) {
         var cur = mine[p.id] || 0, avail = Math.max(0, p.qty - p.out) + cur;
         return '<div class="hitrow" data-pid="' + esc(p.id) + '"><span><b>' + esc(p.name) + '</b><span class="sub">ให้ได้สูงสุด ' + avail + '</span></span><button type="button" data-hd="-1" aria-label="ลด">−</button><input class="input hq" type="number" inputmode="numeric" min="0" value="' + cur + '" aria-label="จำนวน ' + esc(p.name) + '"><button type="button" data-hd="1" aria-label="เพิ่ม">+</button></div>';
@@ -2551,6 +2569,7 @@ body { font-size: 15px; }
     }
     else if (b.dataset.act2 === 'gpromo') openGachaPromo(b.dataset.id);
     else if (b.dataset.act2 === 'ghits') openGachaHits(b.dataset.id, b.dataset.date);
+    else if (b.dataset.act2 === 'gfix') openGachaFix(b.dataset.id);
     else if (b.dataset.act2 === 'stockin') openStockIn(b.dataset.id);
     else if (b.dataset.act2 === 'stockset') openStockSet(b.dataset.id);
     else if (b.dataset.act2 === 'selldirect') openSellDirect(b.dataset.id);
@@ -2584,6 +2603,7 @@ body { font-size: 15px; }
       return;
     }
     if (b.id === 'gDraft') { saveGachaDraft(false); return; }
+    if (b.dataset.pick) { openGachaHits(b.dataset.pick, b.dataset.pdate); return; }
     if (b.id === 'gpAdd') { var pl2 = readPromos(); pl2.push({ buy: 5, get: 1 }); drawPromos(pl2); calcSheet(); return; }
     if (b.dataset.prm) { var pr2 = readPromos(); pr2.splice(+b.dataset.prm, 1); drawPromos(pr2); calcSheet(); return; }
     if (b.dataset.gp !== undefined) {
