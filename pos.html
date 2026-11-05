@@ -671,6 +671,7 @@ body { font-size: 15px; }
   var signed = function (n) { var r = r2(n); return (r > 0 ? '+' : r < 0 ? '−' : '') + baht(Math.abs(r)); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var ymd = function (d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+  var hm = function (t) { return t > 1e11 ? new Date(t).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.' : ''; };
   var shortDate = function (s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }); };
   var uid = function () { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); };
 
@@ -833,7 +834,7 @@ body { font-size: 15px; }
     var lines = o.lines.map(function (e) { var x = findItem(m, e.lot || '_direct', e.lot ? e.item : e.prod); return esc(x ? x.name : 'สินค้า') + ' × ' + (e.qty || 1); }).join(', ');
     var st = o.status === 'sent' ? '<span class="tag ok">ส่งแล้ว</span>' : o.status === 'hold' ? '<span class="tag wait">ฝากรวมส่ง</span>' : '<span class="tag wait">ต้องส่ง</span>';
     var html = '<article class="ocard"><header class="ohead"><b>#' + esc(o.no || '') + (o.cust ? ' · ' + esc(o.cust) : '') + '</b>' + st + '</header>' +
-      '<p class="sub">' + esc(shortDate(o.day)) + ' · ' + esc(ch ? ch.name : 'อื่นๆ') + (o.pending ? ' · รอเงินเข้า' : ' · จ่ายแล้ว') + '</p>' +
+      '<p class="sub">' + esc(shortDate(o.day)) + (hm(o.t) ? ' ' + hm(o.t) : '') + ' · ' + esc(ch ? ch.name : 'อื่นๆ') + (o.pending ? ' · รอเงินเข้า' : ' · จ่ายแล้ว') + '</p>' +
       '<p>' + lines + '</p>' + (o.note ? '<p class="sub">โน้ต: ' + esc(o.note) + '</p>' : '') + (o.trk ? '<p class="sub">เลขพัสดุ: ' + esc(o.trk) + '</p>' : '') +
       '<p class="ototal">' + baht(o.total) + (o.shipFee ? ' <span class="sub">(รวมค่าส่ง ' + baht(o.shipFee) + ')</span>' : o.freeShip ? ' <span class="sub">(ส่งฟรี)</span>' : '') + '</p>';
     if (withActions) {
@@ -865,7 +866,7 @@ body { font-size: 15px; }
     var html = '<article class="cgroup"><header class="ohead"><b>' + esc(g.cust || ('#' + g.orders[0].no)) + '</b><span class="sub">' + n + ' ออเดอร์ · ' + baht(total) + '</span></header>' + badge +
       '<ul>' + g.orders.map(function (o) {
         var armed = S.armed === o.id;
-        return '<li><span><b>#' + esc(o.no) + '</b> ' + itemsText(o) + (o.note ? '<br><span class="sub">' + esc(o.note) + '</span>' : '') + '</span>' +
+        return '<li><span><b>#' + esc(o.no) + '</b> <span class="sub">' + esc(shortDate(o.day)) + ' ' + hm(o.t) + '</span><br>' + itemsText(o) + (o.note ? '<br><span class="sub">' + esc(o.note) + '</span>' : '') + '</span>' +
           '<button type="button" class="link danger" data-cancel="' + esc(o.id) + '">' + (armed ? 'ยืนยันยกเลิก' : 'ยกเลิก') + '</button></li>';
       }).join('') + '</ul>';
     if (hold) {

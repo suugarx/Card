@@ -865,6 +865,8 @@ body { font-size: 15px; }
   var monthKey = function (y, m) { return y + '-' + pad(m + 1); };
   var dayLabel = function (s) { return parseYmd(s).toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short' }); };
   var shortDate = function (s) { return parseYmd(s).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }); };
+  /* time an entry was recorded (t is a timestamp in ms; sample rows use small numbers) */
+  var hm = function (t) { return t > 1e11 ? new Date(t).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.' : ''; };
   var uid = function () { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); };
   var acctOf = function (e) { return e.acct || (e.method === 'transfer' ? 'bank1' : 'cash'); };
 
@@ -1478,6 +1480,7 @@ body { font-size: 15px; }
   function entryRow(e, date) {
     var isIn = e.type === 'income', open = S.rowOpen === e.id;
     var ac = acctById(acctOf(e)), lot = e.lot ? lotById(e.lot) : null, subs = [];
+    if (hm(e.t)) subs.push('<span>' + hm(e.t) + '</span>');
     subs.push('<span>' + esc(ac ? ac.name : 'บัญชีที่ลบแล้ว') + '</span>');
     if (!lot && e.prod && prodById(e.prod)) { var ep = prodById(e.prod); subs.push('<span>' + esc(ep.name) + (e.qty > 0 ? ' ' + e.qty + ' ' + esc(ep.unit || 'ชิ้น') : '') + '</span>'); }
     else if (e.qty > 0) { var eo = lot ? lotStats()[lot.id] : null, eit = eo ? itemFor(eo, e) : null; subs.push('<span>' + (eit && eo.list.length > 1 ? esc(eit.name) + ' ' : '') + e.qty + ' ' + esc(eit ? eit.unit : 'ชิ้น') + '</span>'); }
@@ -1784,7 +1787,7 @@ body { font-size: 15px; }
     $('shTitle').textContent = 'ตัดรางวัลที่ลูกค้าได้ไป';
     $('shForm').innerHTML =
       '<div class="fgroup"><p class="lbl">ของการสุ่มรอบไหน</p><div class="salepick">' + sales.slice(0, 20).map(function (x) {
-        return '<button type="button" class="chip" data-pick="' + esc(x.e.id) + '" data-pdate="' + esc(x.d) + '" aria-pressed="' + (x.e.id === entryId) + '">' + esc(shortDate(x.d)) + ' · ' + esc(x.e.note || ('สุ่ม ' + (x.e.qty || 1) + ' ครั้ง')) + ' · ' + baht(x.e.amount) + '</button>';
+        return '<button type="button" class="chip" data-pick="' + esc(x.e.id) + '" data-pdate="' + esc(x.d) + '" aria-pressed="' + (x.e.id === entryId) + '">' + esc(shortDate(x.d)) + (hm(x.e.t) ? ' ' + hm(x.e.t) : '') + ' · ' + esc(x.e.note || ('สุ่ม ' + (x.e.qty || 1) + ' ครั้ง')) + ' · ' + baht(x.e.amount) + '</button>';
       }).join('') + '</div></div>' +
       '<p class="sub">รอบนี้สุ่ม ' + (e.qty || 1) + ' ครั้ง ใส่รางวัลที่ลูกค้าได้ไปจริง</p>' +
       gi.prizes.map(function (p) {
@@ -1910,7 +1913,7 @@ body { font-size: 15px; }
         if (e.lot !== l.id) return;
         var isIn = e.type === 'income';
         rows.push('<li class="erow"><div class="ebtn" style="cursor:default"><span class="eico ' + (e.pending ? 'wait' : isIn ? 'in' : 'out') + '" aria-hidden="true">' + (e.pending ? '…' : isIn ? '+' : '−') + '</span>' +
-          '<span class="emain"><span class="ecat">' + esc(e.cat) + (e.pending ? '<span class="tag wait">รอเงินเข้า</span>' : '') + '</span><span class="esub"><span>' + esc(dayLabel(d)) + '</span>' + (e.note ? '<span>' + esc(e.note) + '</span>' : '') + '</span></span>' +
+          '<span class="emain"><span class="ecat">' + esc(e.cat) + (e.pending ? '<span class="tag wait">รอเงินเข้า</span>' : '') + '</span><span class="esub"><span>' + esc(dayLabel(d)) + (hm(e.t) ? ' ' + hm(e.t) : '') + '</span>' + (e.note ? '<span>' + esc(e.note) + '</span>' : '') + '</span></span>' +
           '<span class="eamt ' + (e.pending ? 'wait' : isIn ? 'in' : '') + '">' + (isIn ? '+' : '−') + baht(e.amount) + '</span></div>' +
           (l.gacha && isIn ? '<div class="erow-act"><button type="button" class="link" data-act2="ghits" data-id="' + esc(e.id) + '" data-date="' + esc(d) + '">แก้รางวัลที่ออกรอบนี้</button></div>' : '') + '</li>');
       });
